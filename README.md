@@ -114,8 +114,33 @@ The debugger or terminal must also use the Python interpreter that has `osmnx` a
 
 ## Running tests
 
-- Fast unit/smoke tests (no network) run quickly. Integration tests in `tests/` may fetch OSM data and can take minutes or be skipped when `osmnx` is unavailable.
-- To run all tests quickly (skip long integration ones), use pytest markers or run individual test files.
+### Unit tests (fast)
+Run unit tests that don't require network access:
+```bash
+PYTHONPATH=. python -m pytest tests/test_weight.py tests/test_routing.py tests/test_surface_routing.py -v
+```
+
+### Integration tests (require network)
+Integration tests fetch OSM data and may take several minutes:
+
+```bash
+# Run all integration tests
+PYTHONPATH=. python -m pytest -m integration -v -s
+
+# Run specific integration test suites
+PYTHONPATH=. python -m pytest tests/test_integration_requirements.py -v -s
+PYTHONPATH=. python -m pytest tests/test_generate_100km.py -v -s
+```
+
+**Integration test requirements (see `docs/INTEGRATION_TESTS.md`):**
+1. Performance: 100km route generation < 3 minutes
+2. Quality: No gaps > 1km in routes
+3. Surface preference: >80% paved roads with high surface_weight_factor
+
+### Skip integration tests
+```bash
+PYTHONPATH=. python -m pytest -m "not integration" -v
+```
 
 ## Artifacts and cache
 
