@@ -4,8 +4,12 @@ import gpxpy
 import gpxpy.gpx
 import osmnx as ox
 import networkx as nx
+import logging
+import time
 
 ox.config(use_cache=True, log_console=True)
+
+logger = logging.getLogger(__name__)
 
 # Mapping examples for penalties/bonuses. These are simple and intended for PoC only.
 HIGHWAY_PENALTIES = {
@@ -48,9 +52,6 @@ def _edge_penalty(u, v, key, data, params: Dict[str, Any]) -> float:
 
     # prefer_main_roads: if user prefers main roads, we reduce penalty for main roads
     prefer_main = params.get('prefer_main_roads', 0.5)
-    # interpret prefer_main: 0 -> strongly avoid main roads (increase hp), 1 -> prefer main roads (decrease hp)
-    # For simplicity: hp_adj = lerp(avoid_factor, prefer_factor, prefer_main)
-    # choose factors
     avoid_factor = 1.5
     prefer_factor = 0.7
     if highway in ('primary', 'secondary', 'trunk', 'motorway'):
@@ -59,7 +60,6 @@ def _edge_penalty(u, v, key, data, params: Dict[str, Any]) -> float:
     # prefer_unpaved: if user prefers unpaved, decrease penalty for gravel/unpaved
     prefer_unpaved = params.get('prefer_unpaved', 0.5)
     if surface in ('gravel', 'unpaved', 'dirt'):
-        # if prefer_unpaved close to 1, reduce sp
         sp = sp * (1.0 - 0.5 * (prefer_unpaved - 0.5))
 
     # heatmap influence: PoC - we don't have heatmap data, so we mock by looking for 'cycleway' tag
@@ -75,6 +75,428 @@ def _edge_penalty(u, v, key, data, params: Dict[str, Any]) -> float:
     return weight
 
 
+def _haversine(a: Tuple[float, float], b: Tuple[float, float]) -> float:
+    """Return great-circle distance in meters between two (lat, lon) points."""
+    from math import radians, sin, cos, atan2, sqrt
+
+    lat1, lon1 = a
+    lat2, lon2 = b
+    R = 6371000.0
+    phi1 = radians(lat1)
+    phi2 = radians(lat2)
+    dphi = radians(lat2 - lat1)
+    dlambda = radians(lon2 - lon1)
+    a_ = sin(dphi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(dlambda / 2) ** 2
+    c = 2 * atan2(sqrt(a_), sqrt(1 - a_))
+    return R * c
+
+
+def _bearing(a: Tuple[float, float], b: Tuple[float, float]) -> float:
+    """Return bearing in degrees from point a to b (lat, lon)."""
+    from math import radians, degrees, atan2, sin, cos
+
+    lat1, lon1 = map(radians, a)
+    lat2, lon2 = map(radians, b)
+    dlon = lon2 - lon1
+    x = sin(dlon) * cos(lat2)
+    y = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dlon)
+    return (degrees(atan2(x, y)) + 360) % 360
+
+
+def _ensure_edge_lengths(G: nx.MultiDiGraph) -> nx.MultiDiGraph:
+    """Ensure every edge in G has a 'length' attribute.
+
+    Try several osmnx helper entrypoints across versions. If none are available
+    compute an approximate haversine distance between edge endpoints as fallback.
+    Returns the possibly-updated graph (some osmnx helpers return a new graph).
+    """
+    # Try ox.add_edge_lengths (older/newer versions may expose it at module level)
+    try:
+        if hasattr(ox, 'add_edge_lengths') and callable(getattr(ox, 'add_edge_lengths')):
+            logger.debug('Using ox.add_edge_lengths')
+            return ox.add_edge_lengths(G)
+    except Exception as e:
+        logger.warning('ox.add_edge_lengths raised: %s', e)
+
+    # Try osmnx.utils_graph.add_edge_lengths
+    try:
+        from osmnx import utils_graph as _ug
+
+        if hasattr(_ug, 'add_edge_lengths') and callable(getattr(_ug, 'add_edge_lengths')):
+            logger.debug('Using osmnx.utils_graph.add_edge_lengths')
+            return _ug.add_edge_lengths(G)
+    except Exception as e:
+        logger.warning('osmnx.utils_graph.add_edge_lengths raised: %s', e)
+
+    # Last-resort: compute approximate lengths from node coordinates
+    logger.warning('Falling back to approximate haversine-based edge lengths')
+    coords = {n: (G.nodes[n].get('y'), G.nodes[n].get('x')) for n in G.nodes}
+    for u, v, k, data in G.edges(keys=True, data=True):
+        if data.get('length'):
+            continue
+        a = coords.get(u)
+        b = coords.get(v)
+        if a and b and None not in a and None not in b:
+            try:
+                data['length'] = _haversine(a, b)
+            except Exception:
+                data['length'] = 1.0
+        else:
+            data['length'] = 1.0
+    return G
+
+
+def _is_intersection_node(G: nx.MultiDiGraph, node: int) -> bool:
+    """Decide whether a node is an intersection/endpoint. Use undirected degree.
+
+    Intersection defined as node with undirected degree != 2 (i.e., junction or dead-end).
+    """
+    Gu = G.to_undirected(reciprocal=False)
+    deg = Gu.degree(node)
+    return deg != 2
+
+
+def simplify_graph_to_intersections(G: nx.MultiDiGraph) -> nx.DiGraph:
+    """Simplified, defensive implementation: collapse chains of degree-2 nodes.
+
+    This version is intentionally conservative and robust: it only relies on basic
+    undirected traversal and node coordinates, and bails out cleanly on unexpected data.
+    """
+    try:
+        Gu = G.to_undirected(reciprocal=False)
+        H = nx.DiGraph()
+
+        # safe coordinate extractor with fallbacks
+        def node_coord(n):
+            nd = G.nodes.get(n, {})
+            y = nd.get('y') or nd.get('lat')
+            x = nd.get('x') or nd.get('lon') or nd.get('lon_deg')
+            if y is None or x is None:
+                return None
+            return (y, x)
+
+        coords = {n: node_coord(n) for n in G.nodes}
+
+        # build set of intersections (undirected degree != 2)
+        intersections = {n for n in G.nodes if Gu.degree(n) != 2}
+
+        # ensure intersection nodes present in H with coords
+        for n in intersections:
+            c = coords.get(n)
+            if c:
+                H.add_node(n, y=c[0], x=c[1])
+            else:
+                H.add_node(n)
+
+        # For each intersection, walk each neighbor chain until next intersection
+        MAX_HOPS = 5000
+        for n in intersections:
+            for nbr in Gu[n]:
+                # walk forward from n -> nbr until we hit another intersection or max hops
+                path = [n]
+                prev = n
+                cur = nbr
+                hops = 0
+                while cur not in intersections and hops < MAX_HOPS:
+                    path.append(cur)
+                    # next nodes excluding the one we came from
+                    nexts = [x for x in Gu[cur] if x != prev]
+                    if not nexts:
+                        break
+                    prev, cur = cur, nexts[0]
+                    # detect simple cycles
+                    if cur in path:
+                        break
+                    hops += 1
+
+                # if we ended at an intersection different than n, add aggregated edge
+                if cur == n:
+                    continue
+                if cur not in intersections:
+                    # didn't reach intersection; skip
+                    continue
+
+                # Prefer to build geometry by concatenating original edge geometries when present.
+                geom_edges: List[Tuple[float, float]] = []
+                total_len = 0.0
+                seq = path + [cur]
+                for i in range(len(seq) - 1):
+                    u = seq[i]
+                    v = seq[i + 1]
+                    ed = G.get_edge_data(u, v) or G.get_edge_data(v, u)
+                    if not ed:
+                        continue
+                    data = next(iter(ed.values()))
+                    # sum lengths if available
+                    total_len += data.get('length', 0.0)
+                    # if this edge carries a shapely geometry, use its coordinates
+                    geom_obj = data.get('geometry')
+                    if geom_obj is not None:
+                        try:
+                            coords_seq = list(geom_obj.coords)
+                            # geom_obj coords are (lon, lat) -> convert to (lat, lon)
+                            conv = [(lat, lon) for (lon, lat) in coords_seq]
+                            if geom_edges and geom_edges[-1] == conv[0]:
+                                geom_edges.extend(conv[1:])
+                            else:
+                                geom_edges.extend(conv)
+                        except Exception:
+                            # fallback to node coords if geometry extraction fails
+                            c_u = coords.get(u)
+                            c_v = coords.get(v)
+                            if c_u and (not geom_edges or geom_edges[-1] != c_u):
+                                geom_edges.append(c_u)
+                            if c_v:
+                                geom_edges.append(c_v)
+                    else:
+                        # no geometry on edge: fallback to node coords
+                        c_u = coords.get(u)
+                        c_v = coords.get(v)
+                        if c_u and (not geom_edges or geom_edges[-1] != c_u):
+                            geom_edges.append(c_u)
+                        if c_v:
+                            geom_edges.append(c_v)
+
+                # if we couldn't collect any edge geometries, fallback to simple node-based geom
+                if geom_edges:
+                    geom = geom_edges
+                else:
+                    geom = []
+                    for p in seq:
+                        c = coords.get(p)
+                        if c:
+                            if not geom or geom[-1] != c:
+                                geom.append(c)
+
+                # compute fallback length if not present
+                if total_len == 0.0 and len(geom) >= 2:
+                    total_len = _haversine(geom[0], geom[-1])
+
+                # compute initial bearing (if possible)
+                bearing = None
+                if len(geom) >= 2:
+                    bearing = _bearing(geom[0], geom[-1])
+
+                # pick sample tags from first real edge if available
+                highway = None
+                surface = None
+                if len(seq) >= 2:
+                    ed0 = G.get_edge_data(seq[0], seq[1]) or G.get_edge_data(seq[1], seq[0])
+                    if ed0:
+                        fd = next(iter(ed0.values()))
+                        highway = fd.get('highway')
+                        surface = fd.get('surface')
+
+                # add edge (n -> cur) if not already present or if shorter
+                if H.has_edge(n, cur):
+                    # prefer shorter aggregated segment
+                    if H[n][cur].get('length', float('inf')) <= total_len:
+                        continue
+                H.add_edge(n, cur, length=total_len, geometry=geom, bearing=bearing, highway=highway, surface=surface)
+
+        return H
+    except Exception as e:
+        logger.exception('simplify_graph_to_intersections failed: %s', e)
+        # return empty graph so caller can fallback
+        return nx.DiGraph()
+
+
+def compute_route_intersections(start: Tuple[float, float], end: Tuple[float, float], params: Dict[str, Any], radius_meters: float | None = None, heading_threshold_deg: float = 60.0):
+    """Compute a route on a simplified intersection graph using A*.
+
+    This method reduces memory by collapsing degree-2 nodes and making decisions only at
+    intersections. It also applies a heading bias: edges whose bearing deviates strongly
+    from the direction to the final goal can receive an additional penalty unless they match
+    user's preferences.
+    """
+    lat1, lon1 = start
+    lat2, lon2 = end
+
+    logger.info('start: fetch_graph')
+    t0 = time.perf_counter()
+    if radius_meters is not None:
+        G = ox.graph_from_point((lat1, lon1), dist=radius_meters, network_type='bike')
+    else:
+        # build bbox around start/end with a small buffer
+        buf = 0.12
+        n = max(lat1, lat2) + buf
+        s = min(lat1, lat2) - buf
+        e = max(lon1, lon2) + buf
+        w = min(lon1, lon2) - buf
+        G = ox.graph_from_bbox(n, s, e, w, network_type='bike')
+    logger.info('done: fetch_graph — took %.2f seconds', time.perf_counter() - t0)
+
+    logger.info('start: ensure_edge_lengths')
+    t0 = time.perf_counter()
+    G = _ensure_edge_lengths(G)
+    logger.info('done: ensure_edge_lengths — took %.2f seconds', time.perf_counter() - t0)
+
+    # compute edge weights on the original graph so we can reconstruct detailed
+    # segments between intersections using the full-resolution data
+    logger.info('start: compute_edge_weights_on_original')
+    t0 = time.perf_counter()
+    for u, v, k, data in G.edges(keys=True, data=True):
+        try:
+            data['weight'] = _edge_penalty(u, v, k, data, params)
+        except Exception:
+            data['weight'] = data.get('length', 1.0)
+    logger.info('done: compute_edge_weights_on_original — took %.2f seconds', time.perf_counter() - t0)
+
+    logger.info('start: simplify_graph')
+    t0 = time.perf_counter()
+    H = simplify_graph_to_intersections(G)
+    logger.info('done: simplify_graph — took %.2f seconds', time.perf_counter() - t0)
+
+    if len(H) == 0:
+        # fallback to original compute_route
+        return compute_route(start, end, params, radius_meters=radius_meters)
+
+    # find nearest intersection nodes to origin and destination
+    orig_node = ox.distance.nearest_nodes(G, lon1, lat1)
+    dest_node = ox.distance.nearest_nodes(G, lon2, lat2)
+
+    # if nearest nodes are not intersection nodes, find nearest intersection by walking
+    def nearest_intersection(node):
+        if node in H.nodes:
+            return node
+        # BFS until intersection
+        Gu = G.to_undirected(reciprocal=False)
+        from collections import deque
+
+        q = deque([node])
+        seen = {node}
+        while q:
+            u = q.popleft()
+            if u in H.nodes:
+                return u
+            for v in Gu[u]:
+                if v in seen:
+                    continue
+                seen.add(v)
+                q.append(v)
+        return node
+
+    s_node = nearest_intersection(orig_node)
+    t_node = nearest_intersection(dest_node)
+
+    # prepare heuristic for A*
+    goal_coord = (lat2, lon2)
+
+    def heuristic(u, v=None):
+        cu = (H.nodes[u]['y'], H.nodes[u]['x'])
+        return _haversine(cu, goal_coord)
+
+    # compute edge weights with heading bias and user preferences
+    for u, v, data in H.edges(data=True):
+        # base weight = length * penalty
+        fake_data = {'length': data.get('length', 1.0), 'highway': data.get('highway'), 'surface': data.get('surface')}
+        base = _edge_penalty(u, v, 0, fake_data, params)
+        # heading penalty: compare edge bearing to bearing from edge start to goal
+        start_coord = (H.nodes[u]['y'], H.nodes[u]['x'])
+        edge_bearing = data.get('bearing', 0.0)
+        desired_bearing = _bearing(start_coord, goal_coord)
+        diff = abs((edge_bearing - desired_bearing + 180) % 360 - 180)
+        # if deviation is larger than threshold, add multiplicative penalty
+        if diff > heading_threshold_deg:
+            base *= 1.5 + (diff - heading_threshold_deg) / 180.0
+        data['weight'] = base
+
+    try:
+        logger.info('start: astar_search')
+        t0 = time.perf_counter()
+        path = nx.astar_path(H, s_node, t_node, heuristic=heuristic, weight='weight')
+        logger.info('done: astar_search — took %.2f seconds', time.perf_counter() - t0)
+    except Exception:
+        # fallback to original compute_route
+        logger.exception('A* on intersection graph failed, falling back to compute_route')
+        return compute_route(start, end, params, radius_meters=radius_meters)
+
+    # Reconstruct full coordinates by routing on the original graph between
+    # successive intersection nodes. This preserves the original edge geometries
+    # (polylines) so the final GPX follows actual road shapes.
+    coords: List[Tuple[float, float]] = []
+    logger.info('start: reconstruct_coords_from_original_graph')
+    t0 = time.perf_counter()
+
+    # helper map of node coords for quick fallback
+    coords_map = {n: (G.nodes[n].get('y'), G.nodes[n].get('x')) for n in G.nodes}
+
+    for i in range(len(path) - 1):
+        a = path[i]
+        b = path[i + 1]
+        try:
+            seg_nodes = nx.shortest_path(G, a, b, weight='weight')
+        except Exception:
+            try:
+                seg_nodes = nx.shortest_path(G, a, b, weight='length')
+            except Exception:
+                # unable to reconstruct this segment; skip
+                logger.warning('unable to reconstruct segment %s -> %s on original graph', a, b)
+                continue
+
+        # convert the sequence of nodes into coordinates using original edge geometries
+        for j in range(len(seg_nodes) - 1):
+            u = seg_nodes[j]
+            v = seg_nodes[j + 1]
+            ed = G.get_edge_data(u, v) or G.get_edge_data(v, u)
+            if not ed:
+                # fallback to node coords
+                cu = coords_map.get(u)
+                cv = coords_map.get(v)
+                if cu and (not coords or coords[-1] != cu):
+                    coords.append(cu)
+                if cv:
+                    coords.append(cv)
+                continue
+
+            data = next(iter(ed.values()))
+            geom_obj = data.get('geometry')
+            if geom_obj is not None:
+                try:
+                    pts = [(lat, lon) for (lon, lat) in geom_obj.coords]
+                    if coords and coords[-1] == pts[0]:
+                        coords.extend(pts[1:])
+                    else:
+                        coords.extend(pts)
+                except Exception:
+                    cu = coords_map.get(u)
+                    cv = coords_map.get(v)
+                    if cu and (not coords or coords[-1] != cu):
+                        coords.append(cu)
+                    if cv:
+                        coords.append(cv)
+            else:
+                cu = coords_map.get(u)
+                cv = coords_map.get(v)
+                if cu and (not coords or coords[-1] != cu):
+                    coords.append(cu)
+                if cv:
+                    coords.append(cv)
+
+    logger.info('done: reconstruct_coords_from_original_graph — took %.2f seconds', time.perf_counter() - t0)
+
+    # ensure start and end points present
+    if coords and coords[0] != (lat1, lon1):
+        coords.insert(0, (lat1, lon1))
+    if coords and coords[-1] != (lat2, lon2):
+        coords.append((lat2, lon2))
+
+    # generate GPX
+    logger.info('start: generate_gpx')
+    t0 = time.perf_counter()
+    gpx = gpxpy.gpx.GPX()
+    track = gpxpy.gpx.GPXTrack()
+    gpx.tracks.append(track)
+    seg = gpxpy.gpx.GPXTrackSegment()
+    track.segments.append(seg)
+    for lat, lon in coords:
+        seg.points.append(gpxpy.gpx.GPXTrackPoint(lat, lon))
+    gpx_str = gpx.to_xml()
+    logger.info('done: generate_gpx — took %.2f seconds', time.perf_counter() - t0)
+
+    return coords, gpx_str
+
+
 def compute_route(start: Tuple[float, float], end: Tuple[float, float], params: Dict[str, Any], bbox_buffer: float = 0.12, radius_meters: float | None = None):
     """PoC: fetch a fragment of the OSM graph between points (bbox with buffer) or around a point (radius_meters),
     compute the shortest route using custom weights.
@@ -86,6 +508,8 @@ def compute_route(start: Tuple[float, float], end: Tuple[float, float], params: 
     lat2, lon2 = end
 
     # Decide how to fetch the graph: either bbox between points (default) or circle around start point.
+    logger.info('start: fetch_graph')
+    t0 = time.perf_counter()
     if radius_meters is not None:
         # Use graph_from_point with radius in meters (smaller, more predictable area for tests)
         G = ox.graph_from_point((lat1, lon1), dist=radius_meters, network_type='bike')
@@ -100,32 +524,24 @@ def compute_route(start: Tuple[float, float], end: Tuple[float, float], params: 
 
         # Fetch the graph for the bicycle network
         G = ox.graph_from_bbox(n, s, e, w, network_type='bike')
+    logger.info('done: fetch_graph — took %.2f seconds', time.perf_counter() - t0)
 
-    # Ensure the graph has 'length' attributes
-    # different osmnx versions expose helpers differently; try to call helper if present
-    try:
-        if hasattr(ox, 'add_edge_lengths'):
-            G = ox.add_edge_lengths(G)
-        else:
-            # newer osmnx might expose the helper in a submodule; attempt common fallback
-            try:
-                from osmnx import utils_graph
-
-                G = utils_graph.add_edge_lengths(G)
-            except Exception:
-                # assume lengths already present
-                pass
-    except Exception:
-        # best-effort: assume 'length' keys exist on edges
-        pass
+    # Ensure the graph has 'length' attributes (robust across osmnx versions)
+    logger.info('start: ensure_edge_lengths')
+    t0 = time.perf_counter()
+    G = _ensure_edge_lengths(G)
+    logger.info('done: ensure_edge_lengths — took %.2f seconds', time.perf_counter() - t0)
 
     # Compute a weight for each edge and store it as the 'weight' attribute
+    logger.info('start: compute_edge_weights')
+    t0 = time.perf_counter()
     for u, v, k, data in G.edges(keys=True, data=True):
         try:
             wgt = _edge_penalty(u, v, k, data, params)
         except Exception:
             wgt = data.get('length', 1.0)
         data['weight'] = wgt
+    logger.info('done: compute_edge_weights — took %.2f seconds', time.perf_counter() - t0)
 
     # find nearest nodes to the points
     orig_node = ox.distance.nearest_nodes(G, lon1, lat1)
@@ -133,7 +549,10 @@ def compute_route(start: Tuple[float, float], end: Tuple[float, float], params: 
 
     # shortest path using the 'weight' attribute
     try:
+        logger.info('start: shortest_path')
+        t0 = time.perf_counter()
         route_nodes = nx.shortest_path(G, orig_node, dest_node, weight='weight')
+        logger.info('done: shortest_path — took %.2f seconds', time.perf_counter() - t0)
     except nx.NetworkXNoPath:
         raise
 
