@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+osmnx==1.3.0
+networkx
+gpxpy
+httpx
+python-dotenv
+# dev/test
+pytest
+# Note: osmnx has non-Python system dependencies (geos/proj/gdal). See README.md for install notes.

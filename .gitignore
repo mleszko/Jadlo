@@ -1,3 +1,21 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+venv/
+env/
+cache/
+.vscode/
+.DS_Store
+# Byte-compiled / optimized / DLL files
+*.so
+
+# Pytest cache
+.pytest_cache/
+
+# OS artifacts
+Thumbs.db
+ehthumbs.db
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
