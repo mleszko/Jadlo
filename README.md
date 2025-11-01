@@ -5,6 +5,24 @@ This repository contains a proof-of-concept backend for planning routes (GPX) wi
 
 Note: This PoC uses `osmnx` for quick experimentation and validation of routing heuristics. For production, we recommend a dedicated routing engine (GraphHopper, Valhalla, OSRM, OpenRouteService) with prebuilt OSM extracts.
 
+## Algorithm Choice: Dijkstra's Algorithm & A*
+
+The routing implementation uses **Dijkstra's algorithm** (via NetworkX's `shortest_path`) for standard routing and **A*** for intersection-based routing. These algorithms are well-suited for finding optimal routes based on weighted edge values.
+
+**Why Dijkstra/A*?**
+- Both algorithms guarantee finding the optimal path based on edge weights
+- Dijkstra's algorithm explores all possible paths efficiently
+- A* adds a geographic heuristic for faster computation in intersection-based routing
+- They naturally support custom edge weights that combine multiple factors (distance, surface, road type)
+
+**Surface-Based Route Calculation:**
+The route value calculation emphasizes **surface type** as a primary factor:
+- Each surface type (asphalt, gravel, dirt, etc.) has a penalty multiplier
+- The `surface_weight_factor` parameter controls how strongly surface influences route selection
+- Higher values (e.g., 2.0) mean surface quality dominates route choice
+- Lower values (e.g., 0.5) mean distance becomes relatively more important
+- The algorithm finds the optimal balance between distance and surface preference
+
 ## What's in the repo
 
 - `app/main.py` — minimal FastAPI app exposing a POST `/route` endpoint.
@@ -42,9 +60,19 @@ uvicorn app.main:app --reload
 {
 	"start": [52.2297, 21.0122],
 	"end": [53.1325, 23.1688],
-	"params": { "prefer_main_roads": 0.5, "prefer_unpaved": 0.2, "heatmap_influence": 0.0 }
+	"params": { 
+		"prefer_main_roads": 0.5, 
+		"prefer_unpaved": 0.2, 
+		"heatmap_influence": 0.0,
+		"surface_weight_factor": 1.5
+	}
 }
 ```
+
+**Parameter guide for surface-based routing:**
+- `surface_weight_factor`: 1.0 = default balance, 2.0 = strongly prefer better surfaces, 0.5 = prioritize shorter distance
+- `prefer_unpaved`: 1.0 = prefer gravel/dirt, 0.0 = avoid unpaved surfaces
+- `prefer_main_roads`: 1.0 = prefer highways, 0.0 = prefer smaller roads
 
 4) Quick CLI runs (single segment and segmented runner):
 

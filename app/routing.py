@@ -1,3 +1,24 @@
+"""
+Routing module for Jadlo route planner.
+
+This module implements route calculation using Dijkstra's algorithm (via NetworkX's shortest_path)
+and A* algorithm (for intersection-based routing). Routes are calculated based on customizable
+edge weights that consider:
+- Road surface type (primary factor for route quality)
+- Highway classification
+- User preferences (main roads, unpaved surfaces, heatmap data)
+
+The algorithm choice:
+- Dijkstra's algorithm is used for standard routing (compute_route function)
+- A* with geographic heuristic is used for intersection-based routing (compute_route_intersections)
+- Both algorithms find optimal routes based on weighted edge values
+
+Surface-based routing:
+The route value calculation emphasizes surface type as requested, allowing users to:
+- Prefer specific surface types (paved vs unpaved)
+- Control the weight/importance of surface in route selection via surface_weight_factor
+- Balance between shortest distance and preferred surface quality
+"""
 import os
 from typing import Tuple, List, Dict, Any
 import gpxpy
@@ -24,6 +45,8 @@ HIGHWAY_PENALTIES = {
     'path': 0.9,
 }
 
+# Surface penalties - these are multiplied by the surface_weight_factor parameter
+# to control how strongly surface type influences route selection
 SURFACE_PENALTIES = {
     'paved': 1.0,
     'asphalt': 1.0,
@@ -35,6 +58,25 @@ SURFACE_PENALTIES = {
 
 
 def _edge_penalty(u, v, key, data, params: Dict[str, Any]) -> float:
+    """Calculate edge weight/penalty based on route preferences.
+    
+    The weight calculation uses Dijkstra's algorithm (or A*) to find optimal routes.
+    Surface type is a primary factor in route value calculation.
+    
+    Args:
+        u, v, key: Edge identifiers
+        data: Edge data containing length, highway, surface attributes
+        params: User preferences including:
+            - surface_weight_factor: Multiplier for surface penalty (default 1.0)
+                Higher values = surface type has more influence on route choice
+                Lower values = distance becomes relatively more important
+            - prefer_main_roads: 0=avoid, 1=prefer main roads
+            - prefer_unpaved: 0=avoid, 1=prefer unpaved surfaces
+            - heatmap_influence: 0=ignore, 1=follow heatmap strongly
+            
+    Returns:
+        float: Edge weight (lower is better, used by Dijkstra/A* algorithm)
+    """
     # base: length in meters
     length = data.get('length', 1.0)
 
@@ -44,11 +86,17 @@ def _edge_penalty(u, v, key, data, params: Dict[str, Any]) -> float:
         highway = highway[0]
     hp = HIGHWAY_PENALTIES.get(highway, 1.0)
 
-    # surface penalty
+    # Surface penalty - this is the primary factor for route value by surface
+    # The surface_weight_factor parameter controls how strongly surface influences the route
     surface = data.get('surface')
     sp = 1.0
     if surface:
-        sp = SURFACE_PENALTIES.get(surface, SURFACE_PENALTIES.get(surface.split(':')[0], 1.0))
+        base_sp = SURFACE_PENALTIES.get(surface, SURFACE_PENALTIES.get(surface.split(':')[0], 1.0))
+        # Apply surface_weight_factor: higher factor = surface matters more in route choice
+        surface_weight_factor = params.get('surface_weight_factor', 1.0)
+        # Convert penalty from base using exponential scaling for stronger effect
+        # sp = base_sp ^ surface_weight_factor gives stronger differentiation
+        sp = base_sp ** surface_weight_factor
 
     # prefer_main_roads: if user prefers main roads, we reduce penalty for main roads
     prefer_main = params.get('prefer_main_roads', 0.5)
@@ -60,6 +108,7 @@ def _edge_penalty(u, v, key, data, params: Dict[str, Any]) -> float:
     # prefer_unpaved: if user prefers unpaved, decrease penalty for gravel/unpaved
     prefer_unpaved = params.get('prefer_unpaved', 0.5)
     if surface in ('gravel', 'unpaved', 'dirt'):
+        # Additional adjustment beyond base surface penalty for user who explicitly prefers unpaved
         sp = sp * (1.0 - 0.5 * (prefer_unpaved - 0.5))
 
     # heatmap influence: PoC - we don't have heatmap data, so we mock by looking for 'cycleway' tag
@@ -71,6 +120,8 @@ def _edge_penalty(u, v, key, data, params: Dict[str, Any]) -> float:
     # streetview preference: PoC - not implemented, neutral
     streetview_pref = params.get('prefer_streetview', 0.0)
 
+    # Final weight calculation: combines all factors
+    # This weight is used by Dijkstra's algorithm to find the optimal route
     weight = length * hp * sp * heatmap_bonus
     return weight
 

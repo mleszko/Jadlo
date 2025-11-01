@@ -10,6 +10,7 @@ class RouteParams(BaseModel):
     prefer_unpaved: float = Field(0.5, ge=0.0, le=1.0, description="0 = avoid unpaved, 1 = prefer unpaved")
     heatmap_influence: float = Field(0.0, ge=0.0, le=1.0, description="0 = ignore heatmaps, 1 = follow heatmap strongly (mocked)")
     prefer_streetview: float = Field(0.0, ge=0.0, le=1.0, description="0 = ignore streetview, 1 = prefer segments with streetview (requires external API)")
+    surface_weight_factor: float = Field(1.0, ge=0.1, le=3.0, description="Multiplier for surface penalty (default 1.0). Higher values = surface type has stronger influence on route choice")
 
 class RouteRequest(BaseModel):
     start: Tuple[float, float] = Field(..., description="(lat, lon)")
