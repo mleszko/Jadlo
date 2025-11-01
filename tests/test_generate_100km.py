@@ -21,8 +21,10 @@ def test_generate_100km_and_write_artifact():
     start = (52.2297, 21.0122)
     end = (53.1325, 23.1688)
     params = {
-        'prefer_main_roads': 0.5,
-        'prefer_unpaved': 0.2,
+        # prefer_main_roads=1.0 strongly favors main/primary roads
+        # prefer_unpaved=0.0 strongly avoids unpaved/gravel/dirt surfaces
+        'prefer_main_roads': 1.0,
+        'prefer_unpaved': 0.0,
         'heatmap_influence': 0.0,
         'prefer_streetview': 0.0,
     }

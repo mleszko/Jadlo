@@ -1,4 +1,3 @@
-
 # Jadlo — Route Planner PoC
 
 This repository contains a proof-of-concept backend for planning routes (GPX) with configurable user preferences (road priority, surface type, heatmap influence, street-view preference).
