@@ -14,7 +14,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app.routing import _edge_penalty
+from app.routing import calculate_edge_weight
 
 
 def demo_surface_weight_impact():
@@ -57,8 +57,8 @@ def demo_surface_weight_impact():
             'surface_weight_factor': factor
         }
         
-        weight_a = _edge_penalty(1, 2, 0, route_a, params)
-        weight_b = _edge_penalty(1, 2, 0, route_b, params)
+        weight_a = calculate_edge_weight(1000.0, 'residential', 'asphalt', params)
+        weight_b = calculate_edge_weight(800.0, 'residential', 'dirt', params)
         
         print(f"\nFactor = {factor} ({description})")
         print(f"  Route A weight: {weight_a:.2f}")
@@ -115,8 +115,7 @@ def demo_surface_comparison():
     
     weights = []
     for surface, description in surfaces:
-        data = {'length': 100.0, 'highway': 'residential', 'surface': surface}
-        weight = _edge_penalty(1, 2, 0, data, params)
+        weight = calculate_edge_weight(100.0, 'residential', surface, params)
         weights.append((surface, description, weight))
     
     # Sort by weight (best to worst)

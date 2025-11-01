@@ -10,14 +10,11 @@ These tests validate that:
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from app.routing import _edge_penalty
+from app.routing import calculate_edge_weight
 
 
 def test_surface_weight_factor_default():
     """Test that default surface_weight_factor (1.0) produces base penalties."""
-    data_paved = {'length': 100.0, 'highway': 'residential', 'surface': 'asphalt'}
-    data_gravel = {'length': 100.0, 'highway': 'residential', 'surface': 'gravel'}
-    
     params = {
         'prefer_main_roads': 0.5,
         'prefer_unpaved': 0.5,
@@ -25,8 +22,8 @@ def test_surface_weight_factor_default():
         'surface_weight_factor': 1.0  # default
     }
     
-    w_paved = _edge_penalty(1, 2, 0, data_paved, params)
-    w_gravel = _edge_penalty(1, 2, 0, data_gravel, params)
+    w_paved = calculate_edge_weight(100.0, 'residential', 'asphalt', params)
+    w_gravel = calculate_edge_weight(100.0, 'residential', 'gravel', params)
     
     # Gravel should be more expensive than paved (1.6x base penalty)
     assert w_gravel > w_paved
@@ -37,9 +34,6 @@ def test_surface_weight_factor_default():
 
 def test_surface_weight_factor_high_emphasizes_surface():
     """Test that high surface_weight_factor strongly emphasizes surface quality."""
-    data_paved = {'length': 100.0, 'highway': 'residential', 'surface': 'asphalt'}
-    data_dirt = {'length': 100.0, 'highway': 'residential', 'surface': 'dirt'}
-    
     params_low = {
         'prefer_main_roads': 0.5,
         'prefer_unpaved': 0.5,
@@ -55,13 +49,13 @@ def test_surface_weight_factor_high_emphasizes_surface():
     }
     
     # With low factor, surface matters less
-    w_paved_low = _edge_penalty(1, 2, 0, data_paved, params_low)
-    w_dirt_low = _edge_penalty(1, 2, 0, data_dirt, params_low)
+    w_paved_low = calculate_edge_weight(100.0, 'residential', 'asphalt', params_low)
+    w_dirt_low = calculate_edge_weight(100.0, 'residential', 'dirt', params_low)
     ratio_low = w_dirt_low / w_paved_low
     
     # With high factor, surface matters much more
-    w_paved_high = _edge_penalty(1, 2, 0, data_paved, params_high)
-    w_dirt_high = _edge_penalty(1, 2, 0, data_dirt, params_high)
+    w_paved_high = calculate_edge_weight(100.0, 'residential', 'asphalt', params_high)
+    w_dirt_high = calculate_edge_weight(100.0, 'residential', 'dirt', params_high)
     ratio_high = w_dirt_high / w_paved_high
     
     # High factor should create bigger difference between surfaces
@@ -72,9 +66,6 @@ def test_surface_weight_factor_high_emphasizes_surface():
 
 def test_surface_weight_factor_low_prioritizes_distance():
     """Test that low surface_weight_factor prioritizes distance over surface."""
-    data_paved_short = {'length': 100.0, 'highway': 'residential', 'surface': 'asphalt'}
-    data_dirt_long = {'length': 200.0, 'highway': 'residential', 'surface': 'dirt'}
-    
     params_low = {
         'prefer_main_roads': 0.5,
         'prefer_unpaved': 0.5,
@@ -82,8 +73,8 @@ def test_surface_weight_factor_low_prioritizes_distance():
         'surface_weight_factor': 0.5  # low factor - prioritize distance
     }
     
-    w_paved_short = _edge_penalty(1, 2, 0, data_paved_short, params_low)
-    w_dirt_long = _edge_penalty(1, 2, 0, data_dirt_long, params_low)
+    w_paved_short = calculate_edge_weight(100.0, 'residential', 'asphalt', params_low)
+    w_dirt_long = calculate_edge_weight(200.0, 'residential', 'dirt', params_low)
     
     # With low surface factor, the 2x distance should dominate
     # Even though dirt is worse surface, the route should be relatively comparable
@@ -107,8 +98,7 @@ def test_surface_types_ordering():
     
     weights = []
     for surface in surfaces:
-        data = {'length': 100.0, 'highway': 'residential', 'surface': surface}
-        w = _edge_penalty(1, 2, 0, data, params)
+        w = calculate_edge_weight(100.0, 'residential', surface, params)
         weights.append(w)
     
     # Paved surfaces (asphalt, paved, concrete) should have similar low weights
@@ -123,8 +113,6 @@ def test_surface_types_ordering():
 
 def test_prefer_unpaved_reduces_unpaved_penalty():
     """Test that prefer_unpaved parameter reduces penalty for unpaved surfaces."""
-    data_gravel = {'length': 100.0, 'highway': 'residential', 'surface': 'gravel'}
-    
     params_avoid = {
         'prefer_main_roads': 0.5,
         'prefer_unpaved': 0.0,  # avoid unpaved
@@ -139,8 +127,8 @@ def test_prefer_unpaved_reduces_unpaved_penalty():
         'surface_weight_factor': 1.0
     }
     
-    w_avoid = _edge_penalty(1, 2, 0, data_gravel, params_avoid)
-    w_prefer = _edge_penalty(1, 2, 0, data_gravel, params_prefer)
+    w_avoid = calculate_edge_weight(100.0, 'residential', 'gravel', params_avoid)
+    w_prefer = calculate_edge_weight(100.0, 'residential', 'gravel', params_prefer)
     
     # Preferring unpaved should reduce the penalty
     assert w_prefer < w_avoid
@@ -148,12 +136,6 @@ def test_prefer_unpaved_reduces_unpaved_penalty():
 
 def test_combined_surface_and_highway_factors():
     """Test that surface and highway penalties combine correctly."""
-    # Good surface, bad highway (for cyclists)
-    data_motorway_paved = {'length': 100.0, 'highway': 'motorway', 'surface': 'asphalt'}
-    
-    # Bad surface, good highway (for cyclists)
-    data_cycleway_dirt = {'length': 100.0, 'highway': 'cycleway', 'surface': 'dirt'}
-    
     params_high_surface = {
         'prefer_main_roads': 0.5,
         'prefer_unpaved': 0.5,
@@ -170,11 +152,11 @@ def test_combined_surface_and_highway_factors():
     
     # With high surface factor, motorway (bad for bikes but good surface) 
     # vs cycleway (good for bikes but bad surface) comparison
-    w_motorway_high = _edge_penalty(1, 2, 0, data_motorway_paved, params_high_surface)
-    w_cycleway_high = _edge_penalty(1, 2, 0, data_cycleway_dirt, params_high_surface)
+    w_motorway_high = calculate_edge_weight(100.0, 'motorway', 'asphalt', params_high_surface)
+    w_cycleway_high = calculate_edge_weight(100.0, 'cycleway', 'dirt', params_high_surface)
     
-    w_motorway_low = _edge_penalty(1, 2, 0, data_motorway_paved, params_low_surface)
-    w_cycleway_low = _edge_penalty(1, 2, 0, data_cycleway_dirt, params_low_surface)
+    w_motorway_low = calculate_edge_weight(100.0, 'motorway', 'asphalt', params_low_surface)
+    w_cycleway_low = calculate_edge_weight(100.0, 'cycleway', 'dirt', params_low_surface)
     
     # Both should be weighted, confirming the algorithm considers both factors
     assert w_motorway_high > 0
@@ -185,9 +167,6 @@ def test_combined_surface_and_highway_factors():
 
 def test_missing_surface_defaults_correctly():
     """Test that edges without surface data get reasonable default penalty."""
-    data_no_surface = {'length': 100.0, 'highway': 'residential'}
-    data_with_surface = {'length': 100.0, 'highway': 'residential', 'surface': 'asphalt'}
-    
     params = {
         'prefer_main_roads': 0.5,
         'prefer_unpaved': 0.5,
@@ -195,9 +174,26 @@ def test_missing_surface_defaults_correctly():
         'surface_weight_factor': 1.0
     }
     
-    w_no_surface = _edge_penalty(1, 2, 0, data_no_surface, params)
-    w_with_surface = _edge_penalty(1, 2, 0, data_with_surface, params)
+    w_no_surface = calculate_edge_weight(100.0, 'residential', None, params)
+    w_with_surface = calculate_edge_weight(100.0, 'residential', 'asphalt', params)
     
     # Without surface info, penalty should default to 1.0 (neutral)
     # so it should equal the asphalt case (also 1.0)
     assert w_no_surface == w_with_surface
+
+
+def test_compound_surface_types():
+    """Test that compound surface types (e.g., 'asphalt:lanes') are handled correctly."""
+    params = {
+        'prefer_main_roads': 0.5,
+        'prefer_unpaved': 0.5,
+        'heatmap_influence': 0.0,
+        'surface_weight_factor': 1.0
+    }
+    
+    # Test compound surface type
+    w_simple = calculate_edge_weight(100.0, 'residential', 'asphalt', params)
+    w_compound = calculate_edge_weight(100.0, 'residential', 'asphalt:lanes', params)
+    
+    # Both should have the same weight (compound type uses prefix)
+    assert w_simple == w_compound
