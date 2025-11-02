@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Cache and artifacts
+cache/
+artifacts/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Documentation
+docs/
+*.md
+!DEPLOYMENT.md
+
+# Test files
+tests/
+pytest.ini
+
+# Build artifacts
+dist/
+build/

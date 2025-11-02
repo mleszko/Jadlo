@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadlo - GPX Route Generator</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .form-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .map-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .input-group input[type="text"],
+        .input-group input[type="number"] {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .coords-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .slider-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slider-value {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .slider-group input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .slider-group input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .slider-hint {
+            font-size: 0.8em;
+            color: #666;
+            font-style: italic;
+        }
+
+        .button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .button-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .button-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .button-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button-secondary {
+            background: #48bb78;
+            color: white;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
+        }
+
+        .button-secondary:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(72, 187, 120, 0.6);
+        }
+
+        .button-secondary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #map {
+            height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .status.info {
+            background: #bee3f8;
+            color: #2c5282;
+            display: block;
+        }
+
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+            display: block;
+        }
+
+        .status.error {
+            background: #fed7d7;
+            color: #742a2a;
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .presets {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .preset-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .preset-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .info-box {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin-top: 10px;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .info-box p {
+            font-size: 0.85em;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .coords-container {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗺️ Jadlo Route Planner</h1>
+            <p>Generate custom GPX routes with advanced parameters</p>
+        </div>
+
+        <div class="content">
+            <div class="form-section">
+                <div class="input-group">
+                    <label>Start Coordinates (click map or enter manually)</label>
+                    <div class="coords-container">
+                        <input type="number" id="startLat" placeholder="Latitude (e.g., 52.2297)" step="any">
+                        <input type="number" id="startLon" placeholder="Longitude (e.g., 21.0122)" step="any">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>End Coordinates (click map or enter manually)</label>
+                    <div class="coords-container">
+                        <input type="number" id="endLat" placeholder="Latitude (e.g., 52.4064)" step="any">
+                        <input type="number" id="endLon" placeholder="Longitude (e.g., 21.5250)" step="any">
+                    </div>
+                </div>
+
+                <div class="presets">
+                    <button class="preset-btn" onclick="loadPreset('warsaw')">Warsaw Example</button>
+                    <button class="preset-btn" onclick="loadPreset('short')">Short Route</button>
+                    <button class="preset-btn" onclick="loadPreset('long')">Long Route</button>
+                </div>
+
+                <div class="slider-group">
+                    <label>
+                        <span>Prefer Main Roads</span>
+                        <span class="slider-value" id="mainRoadsValue">0.5</span>
+                    </label>
+                    <input type="range" id="preferMainRoads" min="0" max="1" step="0.1" value="0.5">
+                    <span class="slider-hint">0 = avoid main roads, 1 = prefer main roads</span>
+                </div>
+
+                <div class="slider-group">
+                    <label>
+                        <span>Prefer Unpaved Roads</span>
+                        <span class="slider-value" id="unpavedValue">0.2</span>
+                    </label>
+                    <input type="range" id="preferUnpaved" min="0" max="1" step="0.1" value="0.2">
+                    <span class="slider-hint">0 = avoid unpaved, 1 = prefer gravel/dirt roads</span>
+                </div>
+
+                <div class="slider-group">
+                    <label>
+                        <span>Surface Weight Factor</span>
+                        <span class="slider-value" id="surfaceWeightValue">1.5</span>
+                    </label>
+                    <input type="range" id="surfaceWeightFactor" min="0.1" max="3.0" step="0.1" value="1.5">
+                    <span class="slider-hint">How much surface type affects route choice (1.0 = default, 2.0+ = strongly prefer better surfaces)</span>
+                </div>
+
+                <div class="slider-group">
+                    <label>
+                        <span>Heatmap Influence</span>
+                        <span class="slider-value" id="heatmapValue">0.0</span>
+                    </label>
+                    <input type="range" id="heatmapInfluence" min="0" max="1" step="0.1" value="0.0">
+                    <span class="slider-hint">0 = ignore heatmaps, 1 = follow popular routes (experimental)</span>
+                </div>
+
+                <div class="slider-group">
+                    <label>
+                        <span>Prefer Street View Coverage</span>
+                        <span class="slider-value" id="streetviewValue">0.0</span>
+                    </label>
+                    <input type="range" id="preferStreetview" min="0" max="1" step="0.1" value="0.0">
+                    <span class="slider-hint">Prefer roads with street view imagery (requires external API)</span>
+                </div>
+
+                <button class="button button-primary" id="generateBtn" onclick="generateRoute()">
+                    Generate GPX Route
+                </button>
+
+                <button class="button button-secondary" id="downloadBtn" onclick="downloadGPX()" style="display: none;">
+                    Download GPX File
+                </button>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Generating route... This may take a minute.</p>
+                </div>
+
+                <div class="status" id="status"></div>
+
+                <div class="info-box">
+                    <h3>ℹ️ How to use</h3>
+                    <p>
+                        1. Click on the map to set start and end points, or enter coordinates manually<br>
+                        2. Adjust parameters using the sliders to customize your route<br>
+                        3. Click "Generate GPX Route" to create your custom route<br>
+                        4. Download the GPX file and use it with your GPS device or app
+                    </p>
+                </div>
+            </div>
+
+            <div class="map-section">
+                <div id="map"></div>
+                <div class="info-box">
+                    <h3>🎯 Parameter Guide</h3>
+                    <p>
+                        <strong>Surface Weight Factor:</strong> Controls how much road surface quality affects route selection. Higher values prioritize better road surfaces over shorter distance.<br><br>
+                        <strong>Main Roads:</strong> Prefer highways and major roads (faster) vs. smaller roads (scenic).<br><br>
+                        <strong>Unpaved:</strong> Useful for gravel bike routes or adventure riding.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([52.2297, 21.0122], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let startMarker = null;
+        let endMarker = null;
+        let routeLine = null;
+        let currentGPX = null;
+
+        // Map click handler
+        map.on('click', function(e) {
+            if (!startMarker) {
+                startMarker = L.marker(e.latlng, {
+                    icon: L.divIcon({
+                        className: 'custom-marker',
+                        html: '<div style="background: #48bb78; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">S</div>'
+                    })
+                }).addTo(map);
+                document.getElementById('startLat').value = e.latlng.lat.toFixed(6);
+                document.getElementById('startLon').value = e.latlng.lng.toFixed(6);
+                showStatus('Start point set. Click again to set end point.', 'info');
+            } else if (!endMarker) {
+                endMarker = L.marker(e.latlng, {
+                    icon: L.divIcon({
+                        className: 'custom-marker',
+                        html: '<div style="background: #f56565; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">E</div>'
+                    })
+                }).addTo(map);
+                document.getElementById('endLat').value = e.latlng.lat.toFixed(6);
+                document.getElementById('endLon').value = e.latlng.lng.toFixed(6);
+                showStatus('End point set. Adjust parameters and click Generate!', 'success');
+            } else {
+                // Reset markers
+                map.removeLayer(startMarker);
+                map.removeLayer(endMarker);
+                if (routeLine) map.removeLayer(routeLine);
+                startMarker = null;
+                endMarker = null;
+                routeLine = null;
+                document.getElementById('startLat').value = e.latlng.lat.toFixed(6);
+                document.getElementById('startLon').value = e.latlng.lng.toFixed(6);
+                startMarker = L.marker(e.latlng, {
+                    icon: L.divIcon({
+                        className: 'custom-marker',
+                        html: '<div style="background: #48bb78; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">S</div>'
+                    })
+                }).addTo(map);
+                showStatus('Start point reset. Click again to set end point.', 'info');
+            }
+        });
+
+        // Slider value updates
+        document.getElementById('preferMainRoads').addEventListener('input', (e) => {
+            document.getElementById('mainRoadsValue').textContent = e.target.value;
+        });
+        document.getElementById('preferUnpaved').addEventListener('input', (e) => {
+            document.getElementById('unpavedValue').textContent = e.target.value;
+        });
+        document.getElementById('surfaceWeightFactor').addEventListener('input', (e) => {
+            document.getElementById('surfaceWeightValue').textContent = e.target.value;
+        });
+        document.getElementById('heatmapInfluence').addEventListener('input', (e) => {
+            document.getElementById('heatmapValue').textContent = e.target.value;
+        });
+        document.getElementById('preferStreetview').addEventListener('input', (e) => {
+            document.getElementById('streetviewValue').textContent = e.target.value;
+        });
+
+        // Preset loader
+        function loadPreset(preset) {
+            if (preset === 'warsaw') {
+                document.getElementById('startLat').value = 52.2297;
+                document.getElementById('startLon').value = 21.0122;
+                document.getElementById('endLat').value = 52.4064;
+                document.getElementById('endLon').value = 21.5250;
+            } else if (preset === 'short') {
+                document.getElementById('startLat').value = 52.2297;
+                document.getElementById('startLon').value = 21.0122;
+                document.getElementById('endLat').value = 52.2500;
+                document.getElementById('endLon').value = 21.0500;
+            } else if (preset === 'long') {
+                document.getElementById('startLat').value = 52.2297;
+                document.getElementById('startLon').value = 21.0122;
+                document.getElementById('endLat').value = 53.1325;
+                document.getElementById('endLon').value = 23.1688;
+            }
+            updateMapFromInputs();
+            showStatus('Preset loaded! Adjust parameters as needed.', 'info');
+        }
+
+        function updateMapFromInputs() {
+            const startLat = parseFloat(document.getElementById('startLat').value);
+            const startLon = parseFloat(document.getElementById('startLon').value);
+            const endLat = parseFloat(document.getElementById('endLat').value);
+            const endLon = parseFloat(document.getElementById('endLon').value);
+
+            if (startMarker) map.removeLayer(startMarker);
+            if (endMarker) map.removeLayer(endMarker);
+            if (routeLine) map.removeLayer(routeLine);
+
+            if (!isNaN(startLat) && !isNaN(startLon)) {
+                startMarker = L.marker([startLat, startLon], {
+                    icon: L.divIcon({
+                        className: 'custom-marker',
+                        html: '<div style="background: #48bb78; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">S</div>'
+                    })
+                }).addTo(map);
+            }
+
+            if (!isNaN(endLat) && !isNaN(endLon)) {
+                endMarker = L.marker([endLat, endLon], {
+                    icon: L.divIcon({
+                        className: 'custom-marker',
+                        html: '<div style="background: #f56565; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">E</div>'
+                    })
+                }).addTo(map);
+            }
+
+            if (startMarker && endMarker) {
+                map.fitBounds([startMarker.getLatLng(), endMarker.getLatLng()], { padding: [50, 50] });
+            } else if (startMarker) {
+                map.setView(startMarker.getLatLng(), 10);
+            }
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+        }
+
+        async function generateRoute() {
+            const startLat = parseFloat(document.getElementById('startLat').value);
+            const startLon = parseFloat(document.getElementById('startLon').value);
+            const endLat = parseFloat(document.getElementById('endLat').value);
+            const endLon = parseFloat(document.getElementById('endLon').value);
+
+            if (isNaN(startLat) || isNaN(startLon) || isNaN(endLat) || isNaN(endLon)) {
+                showStatus('Please set both start and end coordinates.', 'error');
+                return;
+            }
+
+            const params = {
+                prefer_main_roads: parseFloat(document.getElementById('preferMainRoads').value),
+                prefer_unpaved: parseFloat(document.getElementById('preferUnpaved').value),
+                heatmap_influence: parseFloat(document.getElementById('heatmapInfluence').value),
+                prefer_streetview: parseFloat(document.getElementById('preferStreetview').value),
+                surface_weight_factor: parseFloat(document.getElementById('surfaceWeightFactor').value)
+            };
+
+            const payload = {
+                start: [startLat, startLon],
+                end: [endLat, endLon],
+                params: params
+            };
+
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('status').style.display = 'none';
+            document.getElementById('downloadBtn').style.display = 'none';
+
+            try {
+                // Get API URL - use current origin if running locally, otherwise use deployed API
+                const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                    ? 'http://localhost:8000/route'
+                    : '/route';  // Same origin in production
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to generate route');
+                }
+
+                const data = await response.json();
+                currentGPX = data.gpx;
+
+                // Display route on map
+                if (routeLine) map.removeLayer(routeLine);
+                routeLine = L.polyline(data.coords, {
+                    color: '#667eea',
+                    weight: 4,
+                    opacity: 0.8
+                }).addTo(map);
+                map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+
+                showStatus(`Route generated successfully! ${data.coords.length} points in route`, 'success');
+                document.getElementById('downloadBtn').style.display = 'block';
+            } catch (error) {
+                showStatus('Error: ' + error.message, 'error');
+                console.error('Error generating route:', error);
+            } finally {
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        function downloadGPX() {
+            if (!currentGPX) {
+                showStatus('No route to download. Generate a route first.', 'error');
+                return;
+            }
+
+            const blob = new Blob([currentGPX], { type: 'application/gpx+xml' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'jadlo_route_' + new Date().toISOString().slice(0, 10) + '.gpx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            showStatus('GPX file downloaded successfully!', 'success');
+        }
+
+        // Initialize with default preset
+        loadPreset('warsaw');
+    </script>
+</body>
+</html>

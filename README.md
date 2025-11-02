@@ -1,6 +1,17 @@
 # Jadlo — Route Planner PoC
 
-This repository contains a proof-of-concept backend for planning routes (GPX) with configurable user preferences (road priority, surface type, heatmap influence, street-view preference).
+This repository contains a proof-of-concept route planner for generating GPX routes with configurable user preferences (road priority, surface type, heatmap influence, street-view preference).
+
+**🌐 Try it now!** The repository includes a beautiful web interface that lets users generate custom GPX routes without any installation.
+
+**Quick Deploy (Free Hosting):**
+1. Fork this repository
+2. Sign up at [render.com](https://render.com)
+3. Create new Web Service from your fork
+4. Render auto-detects `render.yaml` and deploys!
+5. Access your app at `https://your-app-name.onrender.com`
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions and alternative hosting options (Railway, Fly.io, GitHub Pages).
 
 Note: This PoC uses `osmnx` for quick experimentation and validation of routing heuristics. For production, we recommend a dedicated routing engine (GraphHopper, Valhalla, OSRM, OpenRouteService) with prebuilt OSM extracts.
 
@@ -24,11 +35,13 @@ The route value calculation emphasizes **surface type** as a primary factor:
 
 ## What's in the repo
 
-- `app/main.py` — minimal FastAPI app exposing a POST `/route` endpoint.
+- `app/main.py` — FastAPI app with web interface and POST `/route` endpoint.
 - `app/routing.py` — PoC logic for fetching a graph with `osmnx`, weighting edges, and generating GPX.
+- `static/index.html` — **Web interface** for generating GPX routes with interactive map and parameter controls.
 - `scripts/run_poc.py` — simple CLI to generate a single route and save GPX.
 - `scripts/run_poc_segmented.py` — tool to split long routes into segments, generate each segment and stitch GPX together (useful in resource-constrained environments).
 - `requirements.txt` — Python dependency list.
+- `DEPLOYMENT.md` — **Complete guide for deploying to free hosting services** (Render, Railway, GitHub Pages).
 
 ## Example outputs
 
@@ -53,7 +66,11 @@ Note: `osmnx` requires native libraries (GEOS/PROJ/GDAL). In Codespace or CI use
 uvicorn app.main:app --reload
 ```
 
-3) Example POST `/route` (JSON):
+3) **Access the web interface**:
+
+Open your browser and go to `http://localhost:8000` to use the interactive web interface with map and parameter controls.
+
+Alternatively, use the API directly with POST `/route` (JSON):
 
 ```json
 {
@@ -82,6 +99,33 @@ PYTHONPATH=. python scripts/run_poc.py --start 52.2297 21.0122 --end 52.3300 21.
 # or: split a long route into segments and stitch GPX (example run in Codespace):
 PYTHONPATH=. python scripts/run_poc_segmented.py --start 52.2297 21.0122 --end 53.1325 23.1688 --segment-km 20 --radius 8000 --out poc_route_100km_segmented.gpx
 ```
+
+## Web Interface
+
+The repository includes a beautiful, user-friendly web interface for generating custom GPX routes:
+
+**Features:**
+- 🗺️ **Interactive Map**: Click to set start and end points, or enter coordinates manually
+- 🎚️ **Parameter Controls**: Sliders for all routing parameters with real-time values
+- 📍 **Preset Routes**: Quick load common route examples (Warsaw, Short, Long)
+- 💾 **Download GPX**: Generate and download GPX files directly
+- 📱 **Responsive Design**: Works on desktop and mobile devices
+- 📖 **Built-in Guide**: Parameter explanations and usage instructions
+
+**How to use:**
+1. Start the server: `uvicorn app.main:app --reload`
+2. Open browser: `http://localhost:8000`
+3. Click map or enter coordinates for start/end points
+4. Adjust parameters using sliders
+5. Click "Generate GPX Route"
+6. Download the generated GPX file
+
+**Deploy for free hosting:**
+See [DEPLOYMENT.md](DEPLOYMENT.md) for step-by-step instructions to deploy on:
+- Render.com (recommended - hosts both API and web interface)
+- Railway.app
+- GitHub Pages + separate backend
+- Fly.io
 
 ## Testing in Codespaces
 
