@@ -185,6 +185,7 @@ For more detailed information:
 - [ALGORITHM_CHOICE.md](docs/ALGORITHM_CHOICE.md) - Detailed explanation of why Dijkstra's algorithm is used
 - [APPLICATION_DOCUMENTATION.md](docs/APPLICATION_DOCUMENTATION.md) - Complete technical documentation
 - [INTEGRATION_TESTS.md](docs/INTEGRATION_TESTS.md) - Testing documentation
+- [PREBUILT_GRAPH_ANALYSIS.md](docs/PREBUILT_GRAPH_ANALYSIS.md) - Analysis of prebuilt graphs for large areas (e.g., 200km radius around Warsaw)
 
 ## Next steps
 
