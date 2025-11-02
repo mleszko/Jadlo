@@ -5,6 +5,7 @@ networkx
 gpxpy
 httpx
 python-dotenv
+psutil
 # dev/test
 pytest
 # Note: osmnx has non-Python system dependencies (geos/proj/gdal). See README.md for install notes.
