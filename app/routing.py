@@ -539,16 +539,17 @@ def compute_route_intersections(start: Tuple[float, float], end: Tuple[float, fl
         b = path[i + 1]
         
         # Use pre-computed geometry from simplified graph H
-        edge_data = H.get_edge_data(a, b)
+        # Try both directions since H is a DiGraph
+        edge_data = H.get_edge_data(a, b) or H.get_edge_data(b, a)
         if edge_data and 'geometry' in edge_data:
             geom = edge_data['geometry']
-            if geom:
+            if geom is not None and len(geom) > 0:
                 # Add geometry points, avoiding duplicates at segment boundaries
                 for pt in geom:
                     if not coords or coords[-1] != pt:
                         coords.append(pt)
             else:
-                # geometry is empty, fallback to node coords
+                # geometry is empty or missing, fallback to node coords
                 ca = coords_map.get(a)
                 cb = coords_map.get(b)
                 if ca and (not coords or coords[-1] != ca):
@@ -564,8 +565,8 @@ def compute_route_intersections(start: Tuple[float, float], end: Tuple[float, fl
                 try:
                     seg_nodes = nx.shortest_path(G, a, b, weight='length')
                 except Exception:
-                    # unable to reconstruct this segment; use straight line
-                    logger.warning('unable to reconstruct segment %s -> %s, using node coords', a, b)
+                    # unable to reconstruct this segment; use straight line between nodes
+                    logger.warning('unable to reconstruct segment %s -> %s, using straight line between nodes', a, b)
                     ca = coords_map.get(a)
                     cb = coords_map.get(b)
                     if ca and (not coords or coords[-1] != ca):
