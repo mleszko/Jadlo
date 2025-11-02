@@ -111,33 +111,23 @@ def analyze_surface_coverage(G, route_nodes, params) -> dict:
     return surface_stats
 
 
-@pytest.mark.integration
-def test_100km_route_performance():
+def _generate_route_with_timing(start: Tuple[float, float], end: Tuple[float, float], 
+                                  params: dict, max_time_seconds: float) -> Tuple[List[List[Tuple[float, float]]], float, float]:
     """
-    Requirement 1: Test that generating 100km route takes no longer than 3 minutes.
+    Helper function to generate a route and measure timing.
     
-    This test generates a ~100km route and verifies it completes within 180 seconds.
+    Returns:
+        (all_coords, elapsed_time, dist_km)
     """
     try:
         import osmnx as ox  # noqa: F401
     except Exception as e:
         pytest.skip(f"osmnx not available: {e}")
     
-    # Use a reasonable route for testing
-    start = (52.2297, 21.0122)  # Warsaw area
-    end = (53.1325, 23.1688)     # ~130km away
-    
-    params = {
-        'prefer_main_roads': 0.5,
-        'prefer_unpaved': 0.2,
-        'heatmap_influence': 0.0,
-        'prefer_streetview': 0.0,
-    }
-    
     # Measure time for route generation
     start_time = time.time()
     
-    # Generate route using segmentation (similar to test_generate_100km.py)
+    # Generate route using segmentation
     dist_km = haversine_km(start, end)
     segment_km = 20.0
     n_segments = max(1, math.ceil(dist_km / segment_km))
@@ -167,8 +157,8 @@ def test_100km_route_performance():
     
     elapsed_time = time.time() - start_time
     
-    # Verify performance requirement: must complete within 3 minutes (180 seconds)
-    assert elapsed_time < 180.0, f"Route generation took {elapsed_time:.1f}s, exceeds 180s limit"
+    # Verify performance requirement
+    assert elapsed_time < max_time_seconds, f"Route generation took {elapsed_time:.1f}s, exceeds {max_time_seconds}s limit"
     
     # Also verify we got valid output
     assert len(all_coords) > 0, "No route segments generated"
@@ -176,6 +166,73 @@ def test_100km_route_performance():
     assert total_points > 10, "Route has too few points"
     
     print(f"\n✓ Performance test passed: {elapsed_time:.1f}s for {dist_km:.1f}km route ({n_segments} segments)")
+    print(f"  Time of generation: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))}")
+    print(f"  Generation completed at: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))}")
+    
+    return all_coords, elapsed_time, dist_km
+
+
+@pytest.mark.integration
+def test_30km_route_performance():
+    """
+    Performance test: Test that generating ~36km route completes in reasonable time.
+    
+    This test generates a ~36km route and verifies it completes within 120 seconds.
+    """
+    # Use a reasonable route for testing
+    start = (52.2297, 21.0122)  # Warsaw area
+    end = (52.4500, 21.4000)     # ~36km away
+    
+    params = {
+        'prefer_main_roads': 0.5,
+        'prefer_unpaved': 0.2,
+        'heatmap_influence': 0.0,
+        'prefer_streetview': 0.0,
+    }
+    
+    _generate_route_with_timing(start, end, params, max_time_seconds=120.0)
+
+
+@pytest.mark.integration
+def test_60km_route_performance():
+    """
+    Performance test: Test that generating ~79km route completes in reasonable time.
+    
+    This test generates a ~79km route and verifies it completes within 180 seconds.
+    """
+    # Use a reasonable route for testing
+    start = (52.2297, 21.0122)  # Warsaw area
+    end = (52.7500, 21.8000)     # ~79km away
+    
+    params = {
+        'prefer_main_roads': 0.5,
+        'prefer_unpaved': 0.2,
+        'heatmap_influence': 0.0,
+        'prefer_streetview': 0.0,
+    }
+    
+    _generate_route_with_timing(start, end, params, max_time_seconds=180.0)
+
+
+@pytest.mark.integration
+def test_100km_route_performance():
+    """
+    Performance test: Test that generating ~177km route takes no longer than 5 minutes.
+    
+    This test generates a ~177km route and verifies it completes within 300 seconds.
+    """
+    # Use a reasonable route for testing
+    start = (52.2297, 21.0122)  # Warsaw area
+    end = (53.1325, 23.1688)     # ~177km away
+    
+    params = {
+        'prefer_main_roads': 0.5,
+        'prefer_unpaved': 0.2,
+        'heatmap_influence': 0.0,
+        'prefer_streetview': 0.0,
+    }
+    
+    _generate_route_with_timing(start, end, params, max_time_seconds=300.0)
 
 
 @pytest.mark.integration

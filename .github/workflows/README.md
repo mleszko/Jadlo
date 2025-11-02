@@ -15,8 +15,11 @@ This directory contains GitHub Actions workflows for automated testing and quali
 
 **Requirements Validated:**
 
-1. **Performance**: Route generation for 100km routes must complete within 3 minutes (180 seconds)
-   - Original requirement was <5 minutes; tests enforce the stricter 3-minute limit
+1. **Performance**: Route generation must complete within time limits
+   - 30km routes: <120 seconds (2 minutes)
+   - 60km routes: <180 seconds (3 minutes)
+   - 100km routes: <300 seconds (5 minutes)
+   - Each test displays generation time and timestamps for monitoring
    
 2. **Route Quality**: No gaps or straight lines larger than 1km
    - Ensures routes follow actual road networks
@@ -27,14 +30,26 @@ This directory contains GitHub Actions workflows for automated testing and quali
 
 **Test Suite:** `tests/test_integration_requirements.py`
 
+The workflow runs each test as a separate step with descriptive names:
+- "Performance test - 30km route generation"
+- "Performance test - 60km route generation"
+- "Performance test - 100km route generation"
+- "Quality test - Check for gaps in 100km route"
+- "Surface preference test - Paved surface routing"
+
 **Running Locally:**
 ```bash
 # Run all route quality tests
 PYTHONPATH=. python -m pytest tests/test_integration_requirements.py -v -s
 
-# Run individual tests
+# Run individual performance tests
+PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_30km_route_performance -v -s
+PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_60km_route_performance -v -s
 PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_100km_route_performance -v -s
+
+# Run quality tests
 PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_100km_route_no_large_gaps -v -s
+PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_100km_route_paved_surface_preference -v -s
 ```
 
 **System Requirements:**
@@ -42,7 +57,7 @@ PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_100km
 - Python 3.12
 - System libraries: libgeos-dev, libproj-dev, libgdal-dev (required by osmnx)
 
-**Timeout:** The workflow has a 15-minute timeout to ensure it doesn't run indefinitely.
+**Timeout:** Each test step has its own timeout (8-12 minutes) appropriate for the route distance being tested.
 
 **Blocking:** If any test fails, the workflow will fail and block the pull request from being merged.
 
