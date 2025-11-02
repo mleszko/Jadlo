@@ -22,7 +22,17 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from app.routing import compute_route
+try:
+    from app.routing import compute_route
+except ImportError as e:
+    print(f"Error: Could not import required modules: {e}")
+    print()
+    print("Please ensure you have installed all dependencies:")
+    print("  pip install -r requirements.txt")
+    print()
+    print("Note: osmnx requires system libraries (GEOS/PROJ/GDAL).")
+    print("These are pre-installed in GitHub Codespaces.")
+    sys.exit(1)
 
 
 def main():
@@ -53,7 +63,8 @@ def main():
     print()
     
     try:
-        # Use a small radius for faster generation in Codespaces
+        # Use a small radius (5000m = 5km) for faster generation in Codespaces
+        # This limits the OSM data fetch size, reducing memory usage and processing time
         coords, gpx = compute_route(start, end, params, radius_meters=5000)
         
         with open(output_file, 'w', encoding='utf-8') as f:
