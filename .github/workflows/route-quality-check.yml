@@ -32,6 +32,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    # Run integration tests that validate:
+    # 1. Performance: Route generation <3 minutes (180s) for 100km routes
+    #    Note: Original requirement was <5 minutes; tests are stricter at 3 minutes
+    # 2. Quality: No gaps/straight lines >1km in routes
+    # 3. Surface preference: >80% paved roads when configured
     - name: Run route quality integration tests
       id: tests
       run: |
@@ -48,7 +53,7 @@ jobs:
         echo "All integration tests passed!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Requirements Verified:" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Route generation performance: <5 minutes (tested at <3 minutes)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Route generation performance: <3 minutes (180s) for 100km routes" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ No gaps/straight lines >1km in generated routes" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Surface preference working correctly (>80% paved when configured)" >> $GITHUB_STEP_SUMMARY
     
@@ -60,7 +65,7 @@ jobs:
         echo "One or more integration tests failed. This commit does not meet quality requirements:" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Requirements:" >> $GITHUB_STEP_SUMMARY
-        echo "- Route generation must complete in <5 minutes" >> $GITHUB_STEP_SUMMARY
+        echo "- Route generation must complete in <3 minutes (180s) for 100km routes" >> $GITHUB_STEP_SUMMARY
         echo "- Routes must have no gaps/straight lines >1km" >> $GITHUB_STEP_SUMMARY
         echo "- Routes with paved preference must have >80% paved roads" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
