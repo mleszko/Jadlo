@@ -8,7 +8,35 @@ The application consists of:
 - **Frontend**: Static HTML/CSS/JavaScript (in `/static` directory)
 - **Backend**: FastAPI application (in `/app` directory)
 
-## Option 1: All-in-One Deployment (Recommended for Testing)
+## Option 0: Oracle Cloud (Best for Production - 24GB RAM Free)
+
+**⭐ Recommended for serious use** - Oracle Cloud offers the best free tier with 24GB RAM on ARM-based Ampere instances.
+
+### Quick Start
+
+1. **Create Oracle Cloud account** at https://www.oracle.com/cloud/free/
+2. **Create an Ubuntu instance** (VM.Standard.A1.Flex with 2-4 OCPU and 12-24GB RAM)
+3. **SSH into your instance** and run:
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/mleszko/Jadlo/main/scripts/setup_oracle.sh -o setup.sh
+   chmod +x setup.sh
+   ./setup.sh
+   ```
+
+4. **Configure OCI Security List** to allow port 8000
+5. **Access your app** at `http://YOUR_PUBLIC_IP:8000`
+
+**📖 Full Guide**: See [DEPLOYMENT_ORACLE.md](DEPLOYMENT_ORACLE.md) for detailed step-by-step instructions.
+
+**Benefits**:
+- ✅ 24GB RAM (perfect for OSMnx and large routes)
+- ✅ Never expires (Always Free tier)
+- ✅ Full control over the instance
+- ✅ Persistent cache for faster subsequent requests
+- ✅ No spin-down delays
+- ✅ Better performance than other free tiers
+
+## Option 1: All-in-One Deployment (Quick Testing)
 
 ### Render.com (Free Tier)
 

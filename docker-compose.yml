@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  jadlo-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jadlo-route-planner
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - PYTHON_VERSION=3.12
+    restart: unless-stopped
+    volumes:
+      # Mount cache directory for OSM data persistence
+      - ./cache:/app/cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          # Limit memory usage to avoid issues on shared hosting
+          memory: 4G
+        reservations:
+          memory: 1G
