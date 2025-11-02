@@ -13,6 +13,11 @@ curl -fsSL https://raw.githubusercontent.com/mleszko/Jadlo/main/scripts/setup_or
 ```
 See [DEPLOYMENT_ORACLE.md](DEPLOYMENT_ORACLE.md) for full guide.
 
+**Memory Optimization:** The application is optimized for 24GB RAM systems with:
+- 20GB allocated to OSMnx/Overpass API queries for handling longer routes (150km+)
+- Increased timeout (300s) and query area size for complex routes
+- Larger default radius (12km) and segment size (30km) for better coverage
+
 **Render.com (Quick testing):**
 1. Fork this repository
 2. Sign up at [render.com](https://render.com)
