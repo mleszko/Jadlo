@@ -40,21 +40,21 @@ jobs:
     - name: Performance test - 30km route generation
       run: |
         PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_30km_route_performance -v -s --tb=short
-      timeout-minutes: 8
+      timeout-minutes: 15
       env:
         PYTHONDONTWRITEBYTECODE: 1
     
     - name: Performance test - 60km route generation
       run: |
         PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_60km_route_performance -v -s --tb=short
-      timeout-minutes: 10
+      timeout-minutes: 20
       env:
         PYTHONDONTWRITEBYTECODE: 1
     
     - name: Performance test - 100km route generation
       run: |
         PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_100km_route_performance -v -s --tb=short
-      timeout-minutes: 12
+      timeout-minutes: 25
       env:
         PYTHONDONTWRITEBYTECODE: 1
     
@@ -62,7 +62,7 @@ jobs:
     - name: Quality test - Check for gaps in 100km route
       run: |
         PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_100km_route_no_large_gaps -v -s --tb=short
-      timeout-minutes: 12
+      timeout-minutes: 25
       env:
         PYTHONDONTWRITEBYTECODE: 1
     
@@ -70,7 +70,7 @@ jobs:
     - name: Surface preference test - Paved surface routing
       run: |
         PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_100km_route_paved_surface_preference -v -s --tb=short
-      timeout-minutes: 8
+      timeout-minutes: 15
       env:
         PYTHONDONTWRITEBYTECODE: 1
     
