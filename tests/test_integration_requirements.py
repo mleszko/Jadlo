@@ -175,13 +175,13 @@ def _generate_route_with_timing(start: Tuple[float, float], end: Tuple[float, fl
 @pytest.mark.integration
 def test_30km_route_performance():
     """
-    Performance test: Test that generating 30km route completes in reasonable time.
+    Performance test: Test that generating ~36km route completes in reasonable time.
     
-    This test generates a ~30km route and verifies it completes within 60 seconds.
+    This test generates a ~36km route and verifies it completes within 60 seconds.
     """
     # Use a reasonable route for testing
     start = (52.2297, 21.0122)  # Warsaw area
-    end = (52.4500, 21.4000)     # ~30km away
+    end = (52.4500, 21.4000)     # ~36km away
     
     params = {
         'prefer_main_roads': 0.5,
@@ -196,13 +196,13 @@ def test_30km_route_performance():
 @pytest.mark.integration
 def test_60km_route_performance():
     """
-    Performance test: Test that generating 60km route completes in reasonable time.
+    Performance test: Test that generating ~79km route completes in reasonable time.
     
-    This test generates a ~60km route and verifies it completes within 120 seconds.
+    This test generates a ~79km route and verifies it completes within 120 seconds.
     """
     # Use a reasonable route for testing
     start = (52.2297, 21.0122)  # Warsaw area
-    end = (52.7500, 21.8000)     # ~60km away
+    end = (52.7500, 21.8000)     # ~79km away
     
     params = {
         'prefer_main_roads': 0.5,
@@ -217,13 +217,13 @@ def test_60km_route_performance():
 @pytest.mark.integration
 def test_100km_route_performance():
     """
-    Performance test: Test that generating 100km route takes no longer than 3 minutes.
+    Performance test: Test that generating ~177km route takes no longer than 3 minutes.
     
-    This test generates a ~100km route and verifies it completes within 180 seconds.
+    This test generates a ~177km route and verifies it completes within 180 seconds.
     """
     # Use a reasonable route for testing
     start = (52.2297, 21.0122)  # Warsaw area
-    end = (53.1325, 23.1688)     # ~130km away
+    end = (53.1325, 23.1688)     # ~177km away
     
     params = {
         'prefer_main_roads': 0.5,
