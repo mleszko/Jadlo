@@ -24,6 +24,8 @@ Render offers a free tier that can host both the API and serve static files.
 
 3. **Environment Variables**:
    - Set `PYTHON_VERSION` to `3.12.3` (or your preferred version)
+   - (Optional) Set `ALLOWED_ORIGINS` to restrict CORS (e.g., `https://your-domain.com,https://www.your-domain.com`)
+   - If not set, all origins are allowed (suitable for testing, not recommended for production)
 
 4. **System Dependencies**:
    Add a `render.yaml` file (see below) or install via Dockerfile:

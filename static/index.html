@@ -630,7 +630,7 @@
                 }).addTo(map);
                 map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
 
-                showStatus(`Route generated successfully! Distance: ${(data.coords.length * 0.01).toFixed(2)} km (approx)`, 'success');
+                showStatus(`Route generated successfully! ${data.coords.length} points in route`, 'success');
                 document.getElementById('downloadBtn').style.display = 'block';
             } catch (error) {
                 showStatus('Error: ' + error.message, 'error');

@@ -10,9 +10,11 @@ import os
 app = FastAPI(title="Jadlo Route Planner PoC")
 
 # Add CORS middleware to allow web interface to call the API
+# Configure allowed origins based on environment
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your domain
+    allow_origins=allowed_origins if allowed_origins != ["*"] else ["*"],  # In production, set ALLOWED_ORIGINS env var
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
