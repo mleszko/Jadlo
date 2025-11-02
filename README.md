@@ -2,7 +2,16 @@
 
 This repository contains a proof-of-concept route planner for generating GPX routes with configurable user preferences (road priority, surface type, heatmap influence, street-view preference).
 
-**🌐 Try it now!** The repository includes a beautiful web interface that lets users generate custom GPX routes without any installation. See [DEPLOYMENT.md](DEPLOYMENT.md) for free hosting options.
+**🌐 Try it now!** The repository includes a beautiful web interface that lets users generate custom GPX routes without any installation.
+
+**Quick Deploy (Free Hosting):**
+1. Fork this repository
+2. Sign up at [render.com](https://render.com)
+3. Create new Web Service from your fork
+4. Render auto-detects `render.yaml` and deploys!
+5. Access your app at `https://your-app-name.onrender.com`
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions and alternative hosting options (Railway, Fly.io, GitHub Pages).
 
 Note: This PoC uses `osmnx` for quick experimentation and validation of routing heuristics. For production, we recommend a dedicated routing engine (GraphHopper, Valhalla, OSRM, OpenRouteService) with prebuilt OSM extracts.
 
