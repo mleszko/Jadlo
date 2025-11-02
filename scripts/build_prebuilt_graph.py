@@ -183,7 +183,7 @@ def main():
         print(f"Recommended: 20-50 km for prebuilt graphs.")
         print(f"For larger areas, consider using a proper routing engine instead.")
         response = input("Continue? (yes/no): ")
-        if response.lower() != 'yes':
+        if response.lower() not in ['yes', 'y']:
             print("Aborted.")
             return
     

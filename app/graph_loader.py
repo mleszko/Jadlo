@@ -72,13 +72,26 @@ class GraphRegistry:
         if not info:
             return False
         
-        # Calculate distance from graph center to point
-        from app.routing import _haversine
+        # Calculate distance from graph center to point using haversine
+        from math import radians, sin, cos, atan2, sqrt
+        
+        def haversine(a: Tuple[float, float], b: Tuple[float, float]) -> float:
+            """Calculate great-circle distance in meters between two (lat, lon) points."""
+            lat1, lon1 = a
+            lat2, lon2 = b
+            R = 6371000.0  # Earth radius in meters
+            phi1 = radians(lat1)
+            phi2 = radians(lat2)
+            dphi = radians(lat2 - lat1)
+            dlambda = radians(lon2 - lon1)
+            a_val = sin(dphi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(dlambda / 2) ** 2
+            c = 2 * atan2(sqrt(a_val), sqrt(1 - a_val))
+            return R * c
         
         center = (info['center']['lat'], info['center']['lon'])
         graph_radius_km = info['radius_km']
         
-        dist_km = _haversine(center, point) / 1000
+        dist_km = haversine(center, point) / 1000
         
         # Check if point + radius fits within graph (use 90% of graph radius to be safe)
         return (dist_km + radius_km) <= (graph_radius_km * 0.9)
@@ -147,7 +160,7 @@ def get_or_download_graph(
     graphs_dir: str = "prebuilt_graphs"
 ) -> Tuple[nx.MultiDiGraph, bool]:
     """
-    Get a graph for routing, using prebuilt if available, otherwise download.
+    Get a graph for routing, preferring prebuilt graphs when available.
     
     This is a convenience function that tries to use a prebuilt graph and falls
     back to downloading from Overpass API if no suitable prebuilt graph exists.
@@ -159,9 +172,9 @@ def get_or_download_graph(
         graphs_dir: Directory containing prebuilt graphs
         
     Returns:
-        Tuple[nx.MultiDiGraph, bool]: (graph, is_prebuilt)
-            - graph: The loaded or downloaded graph
-            - is_prebuilt: True if loaded from prebuilt, False if downloaded
+        Tuple containing:
+            - graph (nx.MultiDiGraph): The loaded or downloaded graph
+            - used_prebuilt (bool): True if loaded from prebuilt, False if downloaded
     """
     import osmnx as ox
     

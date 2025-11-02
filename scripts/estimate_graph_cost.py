@@ -28,12 +28,29 @@ def estimate_graph_metrics(center_name: str, radius_km: float) -> dict:
     """
     area_km2 = math.pi * radius_km * radius_km
     
+    # Density constants (nodes/km² and edges/km² for different area types)
+    URBAN_NODES_PER_KM2 = 2500
+    URBAN_EDGES_PER_KM2 = 6000
+    SUBURBAN_NODES_PER_KM2 = 1500
+    SUBURBAN_EDGES_PER_KM2 = 3500
+    RURAL_NODES_PER_KM2 = 500
+    RURAL_EDGES_PER_KM2 = 1200
+    
     # Mixed density for Warsaw region (weighted average)
     # Adjusting for realistic coverage: OSM doesn't include all roads, focus on bike-accessible
     # Urban (20%), Suburban (40%), Rural (40%)
     # Reduced from full OSM density to bike-network density (~30% of total)
-    avg_nodes_per_km2 = (0.2 * 2500 + 0.4 * 1500 + 0.4 * 500) * 0.3
-    avg_edges_per_km2 = (0.2 * 6000 + 0.4 * 3500 + 0.4 * 1200) * 0.3
+    URBAN_RATIO = 0.2
+    SUBURBAN_RATIO = 0.4
+    RURAL_RATIO = 0.4
+    BIKE_NETWORK_FACTOR = 0.3  # Bike network is ~30% of total road network
+    
+    avg_nodes_per_km2 = (URBAN_RATIO * URBAN_NODES_PER_KM2 + 
+                         SUBURBAN_RATIO * SUBURBAN_NODES_PER_KM2 + 
+                         RURAL_RATIO * RURAL_NODES_PER_KM2) * BIKE_NETWORK_FACTOR
+    avg_edges_per_km2 = (URBAN_RATIO * URBAN_EDGES_PER_KM2 + 
+                         SUBURBAN_RATIO * SUBURBAN_EDGES_PER_KM2 + 
+                         RURAL_RATIO * RURAL_EDGES_PER_KM2) * BIKE_NETWORK_FACTOR
     
     num_nodes = int(area_km2 * avg_nodes_per_km2)
     num_edges = int(area_km2 * avg_edges_per_km2)

@@ -99,7 +99,9 @@ def analyze_graph_cost(center: Tuple[float, float], radius_meters: int, output_d
     
     # Save graph to disk
     os.makedirs(output_dir, exist_ok=True)
-    graph_filename = f"graph_warsaw_r{radius_meters // 1000}km.pkl"
+    # Use a generic name based on center coordinates
+    location_id = f"{lat:.2f}_{lon:.2f}".replace('.', '_').replace('-', 'n')
+    graph_filename = f"graph_{location_id}_r{radius_meters // 1000}km.pkl"
     graph_path = os.path.join(output_dir, graph_filename)
     
     print(f"\nSaving graph to disk: {graph_path}")
