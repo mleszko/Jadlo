@@ -41,11 +41,12 @@ fi
 echo ""
 
 echo -e "${BLUE}Step 3: Installing Docker Compose...${NC}"
-if ! command -v docker-compose &> /dev/null; then
-    sudo apt-get install -y docker-compose
+if ! docker compose version &> /dev/null; then
+    # Try installing docker-compose-plugin for newer Docker versions
+    sudo apt-get install -y docker-compose-plugin || sudo apt-get install -y docker-compose
     echo -e "${GREEN}✓ Docker Compose installed${NC}"
 else
-    echo -e "${GREEN}✓ Docker Compose already installed${NC}"
+    echo -e "${GREEN}✓ Docker Compose already available${NC}"
 fi
 echo ""
 
@@ -91,7 +92,7 @@ echo -e "${GREEN}✓ Docker image built${NC}"
 echo ""
 
 echo -e "${BLUE}Step 8: Starting application with Docker Compose...${NC}"
-docker-compose up -d
+docker compose up -d
 echo -e "${GREEN}✓ Application started${NC}"
 echo ""
 
@@ -99,7 +100,7 @@ echo -e "${BLUE}Step 9: Waiting for application to be ready...${NC}"
 # Wait for application to start (max 60 seconds)
 for i in {1..12}; do
     if docker ps | grep -q jadlo-route-planner; then
-        if curl -f http://localhost:8000/health > /dev/null 2>&1; then
+        if docker exec jadlo-route-planner curl -f http://localhost:8000/health > /dev/null 2>&1; then
             echo -e "${GREEN}✓ Application is ready!${NC}"
             break
         fi
@@ -120,11 +121,11 @@ echo -e "${BLUE}Access your application:${NC}"
 echo "  → http://$PUBLIC_IP:8000"
 echo ""
 echo -e "${BLUE}Useful commands:${NC}"
-echo "  → Check status:   docker-compose ps"
-echo "  → View logs:      docker-compose logs -f"
-echo "  → Restart:        docker-compose restart"
-echo "  → Stop:           docker-compose down"
-echo "  → Update:         git pull && docker-compose up -d --build"
+echo "  → Check status:   docker compose ps"
+echo "  → View logs:      docker compose logs -f"
+echo "  → Restart:        docker compose restart"
+echo "  → Stop:           docker compose down"
+echo "  → Update:         git pull && docker compose up -d --build"
 echo ""
 echo -e "${BLUE}Important:${NC}"
 echo "  → Ensure OCI Security List allows inbound traffic on port 8000"

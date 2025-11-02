@@ -78,7 +78,7 @@ sudo sh get-docker.sh
 sudo usermod -aG docker ubuntu
 
 # Install Docker Compose
-sudo apt-get install -y docker-compose
+sudo apt-get install -y docker compose
 
 # Log out and back in for group changes to take effect
 exit
@@ -87,7 +87,7 @@ ssh -i ~/.ssh/oci_key ubuntu@<PUBLIC_IP_ADDRESS>
 
 # Verify Docker installation
 docker --version
-docker-compose --version
+docker compose --version
 ```
 
 ## Step 5: Deploy Jadlo Route Planner
@@ -98,10 +98,10 @@ git clone https://github.com/mleszko/Jadlo.git
 cd Jadlo
 
 # Build and start the application using Docker Compose
-docker-compose up -d
+docker compose up -d
 
 # Check logs to ensure it's running
-docker-compose logs -f
+docker compose logs -f
 ```
 
 The application should start within 30-60 seconds. Press `Ctrl+C` to stop following logs.
@@ -188,27 +188,27 @@ docker inspect jadlo-route-planner | grep -A 5 RestartPolicy
 ### View Application Logs
 ```bash
 cd ~/Jadlo
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ### Check Application Status
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 ### Restart Application
 ```bash
 cd ~/Jadlo
-docker-compose restart
+docker compose restart
 ```
 
 ### Update Application
 ```bash
 cd ~/Jadlo
 git pull
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ### Check Resource Usage
@@ -232,17 +232,17 @@ docker system df
 ## Performance Optimization
 
 ### Cache Directory
-The application caches OSM data in the `cache/` directory. This is mounted as a volume in docker-compose.yml to persist between restarts.
+The application caches OSM data in the `cache/` directory. This is mounted as a volume in docker compose.yml to persist between restarts.
 
 To clear cache if it grows too large:
 ```bash
 cd ~/Jadlo
 sudo rm -rf cache/*
-docker-compose restart
+docker compose restart
 ```
 
 ### Memory Configuration
-The docker-compose.yml limits memory to 4GB by default. You can adjust this based on your instance size:
+The docker compose.yml limits memory to 4GB by default. You can adjust this based on your instance size:
 
 ```yaml
 deploy:
@@ -262,7 +262,7 @@ For routes longer than 100km, the application may take several minutes. Consider
 ### Application Won't Start
 ```bash
 # Check Docker logs
-docker-compose logs
+docker compose logs
 
 # Check if port is already in use
 sudo netstat -tulpn | grep 8000

@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y \
     libgeos-dev \
     libproj-dev \
     libgdal-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -16,8 +17,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
+# Create cache directory for OSM data
+RUN mkdir -p /app/cache
+
 # Expose port (default 8000, can be overridden by $PORT)
 EXPOSE 8000
+
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
 
 # Run the application (use $PORT if available, default to 8000)
 CMD sh -c "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"

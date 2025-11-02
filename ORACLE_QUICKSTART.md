@@ -68,10 +68,10 @@ http://<PUBLIC_IP>:8000
 
 ```bash
 # Check status
-docker-compose ps
+docker compose ps
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Check resources
 docker stats
@@ -82,7 +82,7 @@ docker stats
 ```bash
 cd ~/Jadlo
 git pull
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ## 🛑 Troubleshooting
@@ -90,7 +90,7 @@ docker-compose up -d --build
 ### Application not accessible
 - Verify OCI Security List includes port 8000
 - Check firewall: `sudo ufw status`
-- Check logs: `docker-compose logs`
+- Check logs: `docker compose logs`
 
 ### Docker permission denied
 Log out and back in after setup, or run:
