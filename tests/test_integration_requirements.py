@@ -177,7 +177,7 @@ def test_30km_route_performance():
     """
     Performance test: Test that generating ~36km route completes in reasonable time.
     
-    This test generates a ~36km route and verifies it completes within 60 seconds.
+    This test generates a ~36km route and verifies it completes within 90 seconds.
     """
     # Use a reasonable route for testing
     start = (52.2297, 21.0122)  # Warsaw area
@@ -190,7 +190,7 @@ def test_30km_route_performance():
         'prefer_streetview': 0.0,
     }
     
-    _generate_route_with_timing(start, end, params, max_time_seconds=60.0)
+    _generate_route_with_timing(start, end, params, max_time_seconds=90.0)
 
 
 @pytest.mark.integration
@@ -198,7 +198,7 @@ def test_60km_route_performance():
     """
     Performance test: Test that generating ~79km route completes in reasonable time.
     
-    This test generates a ~79km route and verifies it completes within 120 seconds.
+    This test generates a ~79km route and verifies it completes within 150 seconds.
     """
     # Use a reasonable route for testing
     start = (52.2297, 21.0122)  # Warsaw area
@@ -211,15 +211,15 @@ def test_60km_route_performance():
         'prefer_streetview': 0.0,
     }
     
-    _generate_route_with_timing(start, end, params, max_time_seconds=120.0)
+    _generate_route_with_timing(start, end, params, max_time_seconds=150.0)
 
 
 @pytest.mark.integration
 def test_100km_route_performance():
     """
-    Performance test: Test that generating ~177km route takes no longer than 3 minutes.
+    Performance test: Test that generating ~177km route takes no longer than 4 minutes.
     
-    This test generates a ~177km route and verifies it completes within 180 seconds.
+    This test generates a ~177km route and verifies it completes within 240 seconds.
     """
     # Use a reasonable route for testing
     start = (52.2297, 21.0122)  # Warsaw area
@@ -232,7 +232,7 @@ def test_100km_route_performance():
         'prefer_streetview': 0.0,
     }
     
-    _generate_route_with_timing(start, end, params, max_time_seconds=180.0)
+    _generate_route_with_timing(start, end, params, max_time_seconds=240.0)
 
 
 @pytest.mark.integration

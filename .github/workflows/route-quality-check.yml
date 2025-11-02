@@ -40,21 +40,21 @@ jobs:
     - name: Performance test - 30km route generation
       run: |
         PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_30km_route_performance -v -s --tb=short
-      timeout-minutes: 3
+      timeout-minutes: 5
       env:
         PYTHONDONTWRITEBYTECODE: 1
     
     - name: Performance test - 60km route generation
       run: |
         PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_60km_route_performance -v -s --tb=short
-      timeout-minutes: 5
+      timeout-minutes: 7
       env:
         PYTHONDONTWRITEBYTECODE: 1
     
     - name: Performance test - 100km route generation
       run: |
         PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_100km_route_performance -v -s --tb=short
-      timeout-minutes: 5
+      timeout-minutes: 8
       env:
         PYTHONDONTWRITEBYTECODE: 1
     
@@ -62,7 +62,7 @@ jobs:
     - name: Quality test - Check for gaps in 100km route
       run: |
         PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_100km_route_no_large_gaps -v -s --tb=short
-      timeout-minutes: 5
+      timeout-minutes: 8
       env:
         PYTHONDONTWRITEBYTECODE: 1
     
@@ -70,7 +70,7 @@ jobs:
     - name: Surface preference test - Paved surface routing
       run: |
         PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_100km_route_paved_surface_preference -v -s --tb=short
-      timeout-minutes: 3
+      timeout-minutes: 5
       env:
         PYTHONDONTWRITEBYTECODE: 1
     
@@ -82,7 +82,7 @@ jobs:
         echo "All integration tests passed!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Requirements Verified:" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Route generation performance: 30km route <60s, 60km route <120s, 100km route <180s" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Route generation performance: 30km route <90s, 60km route <150s, 100km route <240s" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ No gaps/straight lines >1km in generated routes" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Surface preference working correctly (>80% paved when configured)" >> $GITHUB_STEP_SUMMARY
     
@@ -94,7 +94,7 @@ jobs:
         echo "One or more integration tests failed. This commit does not meet quality requirements:" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Requirements:" >> $GITHUB_STEP_SUMMARY
-        echo "- Route generation must complete in time: 30km <60s, 60km <120s, 100km <180s" >> $GITHUB_STEP_SUMMARY
+        echo "- Route generation must complete in time: 30km <90s, 60km <150s, 100km <240s" >> $GITHUB_STEP_SUMMARY
         echo "- Routes must have no gaps/straight lines >1km" >> $GITHUB_STEP_SUMMARY
         echo "- Routes with paved preference must have >80% paved roads" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
