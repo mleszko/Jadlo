@@ -136,6 +136,8 @@ PYTHONPATH=. python -m pytest tests/test_generate_100km.py -v -s
 2. Quality: No gaps > 1km in routes
 3. Surface preference: >80% paved roads with high surface_weight_factor
 
+**Note:** These integration tests are automatically run by GitHub Actions on every commit to ensure code quality. See `.github/workflows/README.md` for details about the CI/CD pipeline.
+
 ### Skip integration tests
 ```bash
 PYTHONPATH=. python -m pytest -m "not integration" -v
