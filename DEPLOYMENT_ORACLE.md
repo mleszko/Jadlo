@@ -242,14 +242,18 @@ docker compose restart
 ```
 
 ### Memory Configuration
-The docker compose.yml limits memory to 4GB by default. You can adjust this based on your instance size:
+The docker compose.yml is configured to use 24GB of memory by default, which matches the Oracle Cloud free tier capacity. This provides optimal performance for large routes (100km+):
 
 ```yaml
 deploy:
   resources:
     limits:
-      memory: 8G  # Increase for larger routes
+      memory: 24G  # Full Oracle Cloud free tier capacity
+    reservations:
+      memory: 4G   # Minimum memory reservation
 ```
+
+If you're deploying on a smaller instance, you can reduce this limit by editing the docker-compose.yml file.
 
 ### Handle Long Routes
 For routes longer than 100km, the application may take several minutes. Consider:
