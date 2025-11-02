@@ -189,6 +189,16 @@ Similar serverless platforms with **128MB memory limits** per function. Not suit
 | Cloudflare Workers| 128MB         | N/A              | 128MB               | No (too limited)    |
 | Netlify/Vercel    | 128MB         | N/A              | 128MB               | No (too limited)    |
 
+### Occasional Use Pricing (32GB RAM, 2-10 Times per Month)
+
+| Provider    | Instance Type | On-Demand (2 uses) | On-Demand (10 uses) | Spot (2 uses) | Spot (10 uses) |
+|-------------|--------------|-------------------|---------------------|---------------|----------------|
+| AWS         | m6i.2xlarge  | ~$6/month         | ~$31/month          | ~$1.60/month  | ~$8/month      |
+| Google Cloud| N2 standard  | ~$6/month         | ~$31/month          | ~$1.50/month  | ~$10/month     |
+| Azure       | D8s v3       | ~$6/month         | ~$31/month          | ~$2/month     | ~$10/month     |
+
+*Assumes 8 hours per use. Billing is per-second (AWS/GCP) or per-minute (Azure).*
+
 ---
 
 ## 5. Why 32GB RAM is Not Available for Free
@@ -251,7 +261,110 @@ For non-critical workloads:
 
 **Trade-off**: Lower cost but no uptime guarantee.
 
-### 6.4 Self-Hosting
+### 6.4 Occasional Use (2-10 Times per Month)
+
+**Perfect for intermittent workloads** - Pay only when you use resources:
+
+#### On-Demand Instances (Best for Reliability)
+
+Pay-as-you-go pricing with no commitment:
+
+**AWS EC2** (e.g., m6i.2xlarge: 8 vCPUs, 32GB RAM):
+- **Hourly rate**: ~$0.38/hour (US East region)
+- **2 uses/month** (8 hours each): 16 hours × $0.38 = **~$6/month**
+- **10 uses/month** (8 hours each): 80 hours × $0.38 = **~$31/month**
+
+**Google Cloud** (N2 standard with 32GB):
+- **Hourly rate**: ~$0.38/hour
+- **Similar costs**: $6-$31/month for occasional use
+
+**Azure** (Standard D8s v3: 8 vCPUs, 32GB):
+- **Hourly rate**: ~$0.38/hour
+- **Comparable pricing** to AWS/GCP
+
+**Advantages**:
+- Start/stop as needed - pay only for actual usage
+- No interruptions or termination risk
+- Billing by the second (AWS/GCP) or minute (Azure)
+- Perfect for scheduled batch processing
+
+#### Spot Instances (Best for Cost Savings)
+
+Up to 90% discount on on-demand prices:
+
+**AWS Spot Instances**:
+- **Typical rate**: $0.07-$0.15/hour (60-90% discount)
+- **2 uses/month**: 16 hours × $0.10 = **~$1.60/month**
+- **10 uses/month**: 80 hours × $0.10 = **~$8/month**
+
+**Google Cloud Spot VMs**:
+- **Rate**: ~$0.12/hour (region dependent)
+- **Cost**: $1.50-$10/month for occasional use
+
+**Azure Spot VMs**:
+- Similar savings to AWS/GCP
+- Dynamic pricing based on available capacity
+
+**Trade-offs**:
+- Can be interrupted with 2-minute (AWS) or 30-second (GCP) notice
+- Best for fault-tolerant batch jobs
+- Not suitable if interruption is problematic
+- Requires automation to handle interruptions
+
+#### Serverless Containers (Alternative for <16GB)
+
+For workloads that can fit in lower memory:
+
+**AWS Fargate** (ECS/EKS):
+- Pay per vCPU/GB-second
+- Up to 30GB RAM per task
+- No server management
+
+**Google Cloud Run**:
+- Up to 32GB RAM per container (recently increased)
+- Pay only during request processing
+- Scales to zero when idle
+
+**Azure Container Apps**:
+- Up to 4 vCPUs, 8GB RAM per container
+- Pay-per-use pricing
+
+**Note**: For Jadlo's OSMnx routing, traditional VMs are recommended due to memory requirements and startup time.
+
+#### Cost Comparison Table (2-10 Uses/Month)
+
+| Solution | Usage Pattern | Est. Monthly Cost | Reliability | Best For |
+|----------|--------------|-------------------|-------------|----------|
+| On-Demand | 2 uses × 8h | ~$6 | High | Critical jobs |
+| On-Demand | 10 uses × 8h | ~$31 | High | Regular processing |
+| Spot | 2 uses × 8h | ~$1.60 | Medium | Batch jobs |
+| Spot | 10 uses × 8h | ~$8 | Medium | Fault-tolerant tasks |
+| Cloud Run | 2 uses × 8h | Varies | High | Web services |
+
+#### Recommendations for Occasional Use
+
+1. **For critical route generation** (must complete):
+   - Use on-demand instances: ~$6-$31/month
+   - Simple to use: start instance, run job, stop instance
+   - No interruption risk
+
+2. **For cost optimization** (can tolerate interruptions):
+   - Use spot instances: ~$1.60-$8/month
+   - 60-90% cost savings
+   - Implement interruption handling
+
+3. **Automation tips**:
+   - Use AWS Lambda/Cloud Functions to start/stop instances
+   - Schedule instances with Cloud Scheduler
+   - Auto-shutdown after job completion
+   - Use instance templates for quick deployment
+
+4. **Billing optimization**:
+   - Stop (not terminate) instances between uses
+   - Use reserved IP addresses to maintain configuration
+   - Storage costs separate (~$0.10/GB/month for stopped instance volumes)
+
+### 6.5 Self-Hosting
 
 For complete control:
 - Local server or workstation
@@ -274,18 +387,42 @@ For complete control:
 
 **Recommendation**: Continue with current Render.com setup for demonstration and light usage.
 
-### 7.2 For Heavy Usage (If Needed)
+### 7.2 For Occasional Usage (2-10 Times per Month)
 
-If 32GB RAM is genuinely required for production:
+**Best option for intermittent workloads** - Pay only when you use resources:
+
+1. **On-demand instances** (recommended for critical jobs):
+   - AWS/GCP/Azure: ~$0.38/hour for 32GB RAM
+   - **Cost**: $6-$31/month for 2-10 uses (8 hours each)
+   - No interruptions, pay-per-second billing
+   - Start instance → Run job → Stop instance
+
+2. **Spot instances** (for cost optimization):
+   - AWS/GCP/Azure: ~$0.10/hour (60-90% discount)
+   - **Cost**: $1.60-$8/month for 2-10 uses
+   - Can be interrupted - best for fault-tolerant jobs
+   - Requires interruption handling automation
+
+**Example workflow**:
+- Use AWS CLI/SDK to start an m6i.2xlarge instance
+- Run your route generation job
+- Automatically stop instance when complete
+- Total cost: ~$3 for one 8-hour session
+
+See [Section 6.4](#64-occasional-use-2-10-times-per-month) for detailed pricing and automation tips.
+
+### 7.3 For Continuous/Heavy Usage
+
+If 32GB RAM is required 24/7 or very frequently:
 
 1. **Apply for academic/research credits** if affiliated with an institution
 2. **Use trial credits** for temporary high-resource needs
-3. **Consider paid tiers**: 
-   - AWS EC2 m5.2xlarge (32GB): ~$0.38/hour = ~$280/month
-   - GCP n2-highmem-4 (32GB): ~$0.34/hour = ~$250/month
-   - Oracle Cloud ARM (24GB): ~$0.03/hour = ~$22/month (best value)
+3. **Consider reserved instances** (significant savings for continuous use):
+   - AWS EC2 m5.2xlarge (32GB): ~$280/month on-demand, ~$170/month reserved
+   - GCP n2-highmem-4 (32GB): ~$250/month on-demand, ~$150/month committed
+   - Oracle Cloud ARM (24GB): ~$22/month (best value)
 
-### 7.3 Optimization First
+### 7.4 Optimization First
 
 Before pursuing high-memory hosting:
 
@@ -309,15 +446,20 @@ These are optimized for production and use less memory than OSMnx.
 **Best Available Options**:
 1. **Oracle Cloud**: 24GB ARM (closest to requirement)
 2. **Academic credits**: $5,000-$10,000 for research projects
-3. **Trial credits**: Temporary access to high-memory instances
-4. **Paid tiers**: Required for sustained 32GB+ workloads
+3. **Occasional use on-demand**: $6-$31/month for 2-10 uses
+4. **Occasional use spot**: $1.60-$10/month for 2-10 uses
+5. **Trial credits**: Temporary access to high-memory instances
+6. **Paid tiers**: Required for sustained 24/7 workloads
 
 **For Jadlo Project**:
 - Current Render.com setup is appropriate for demonstration
 - Memory optimization strategies are already in place
-- If production-scale hosting is needed, consider:
+- **For occasional heavy processing** (2-10 times/month):
+  - On-demand instances: $6-$31/month (reliable)
+  - Spot instances: $1.60-$10/month (cost-optimized)
+- If production-scale 24/7 hosting is needed, consider:
   - Academic cloud credits (if eligible)
-  - Paid cloud instances (most reliable)
+  - Reserved instances (significant discount for continuous use)
   - Dedicated routing engines (more efficient than OSMnx)
 
 ---
