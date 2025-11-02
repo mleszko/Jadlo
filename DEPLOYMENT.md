@@ -2,6 +2,8 @@
 
 This guide explains how to deploy the Jadlo Route Planner for free so users can test it without installation.
 
+**Note**: For research on free hosting with 32GB of RAM, see [FREE_HOSTING_32GB_RAM_RESEARCH.md](docs/FREE_HOSTING_32GB_RAM_RESEARCH.md). Summary: No cloud provider offers 32GB RAM for free; the best free option is Oracle Cloud with 24GB ARM VMs.
+
 ## Architecture
 
 The application consists of:
@@ -201,6 +203,53 @@ For the easiest free deployment:
 6. Deploy!
 
 Your app will be available at `https://your-app-name.onrender.com` and users can use it directly without any installation.
+
+## High-Memory Hosting (32GB+ RAM)
+
+If you need high-memory hosting (32GB+ RAM) for production workloads or large-scale route generation:
+
+### Reality Check
+**No cloud provider offers 32GB RAM for free.** Free tiers typically provide 1-2GB RAM, designed for learning and prototyping. See [FREE_HOSTING_32GB_RAM_RESEARCH.md](docs/FREE_HOSTING_32GB_RAM_RESEARCH.md) for detailed research.
+
+### Options for High-Memory Hosting
+
+#### 1. Oracle Cloud (Best Free Option)
+- **24GB RAM** on ARM-based VMs (Always Free)
+- Closest to 32GB requirement among free tiers
+- Limited to ARM architecture
+
+#### 2. Academic/Research Cloud Credits
+For academic institutions and research projects:
+- **Google Cloud Research Credits**: Up to $5,000+ (up to 624GB RAM instances)
+- **AWS Cloud Credit for Research**: Up to $5,000+ students, higher for faculty (up to 768GB RAM)
+- **Azure Research Credits**: $5,000-$10,000+ (up to 448GB RAM)
+
+Application required with research proposal.
+
+#### 3. Trial Credits (Temporary)
+For short-term high-memory needs:
+- **AWS**: $200-$300 in trial credits
+- **Google Cloud**: $300 credit (90 days)
+- **Azure**: $200 credit (30 days)
+- **Oracle**: $300 credit (30 days)
+
+Requires credit card verification; expires after trial period.
+
+#### 4. Paid Cloud Hosting
+For sustained production use:
+- **AWS EC2 m5.2xlarge** (32GB): ~$280/month
+- **GCP n2-highmem-4** (32GB): ~$250/month  
+- **Oracle Cloud ARM** (24GB): ~$22/month (best value)
+
+#### 5. Memory Optimization (Recommended First Step)
+Before pursuing expensive hosting:
+- Use **segmented routing** (`scripts/run_poc_segmented.py`)
+- Use **intersection-based routing** for lower memory usage
+- Implement caching for OSMnx data
+- Consider dedicated routing engines (GraphHopper, OSRM, Valhalla) that are more memory-efficient than OSMnx
+
+### Recommendation
+For Jadlo's demonstration and light usage, the current **Render.com free tier** with memory optimization is sufficient. For production-scale or academic research requiring 32GB+ RAM, apply for academic cloud credits or use paid tiers.
 
 ## Support
 

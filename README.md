@@ -127,6 +127,8 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for step-by-step instructions to deploy on:
 - GitHub Pages + separate backend
 - Fly.io
 
+**Note**: For research on high-memory hosting (32GB+ RAM), see [docs/FREE_HOSTING_32GB_RAM_RESEARCH.md](docs/FREE_HOSTING_32GB_RAM_RESEARCH.md). No free tier offers 32GB; Oracle Cloud provides 24GB ARM VMs as the best free option.
+
 ## Testing in Codespaces
 
 GitHub Codespaces provides a cloud-based development environment that's perfect for testing Jadlo. The Codespace comes with Python and system dependencies (GEOS/PROJ/GDAL) pre-installed.
@@ -176,6 +178,7 @@ For more detailed information:
 - [ALGORITHM_CHOICE.md](docs/ALGORITHM_CHOICE.md) - Detailed explanation of why Dijkstra's algorithm is used
 - [APPLICATION_DOCUMENTATION.md](docs/APPLICATION_DOCUMENTATION.md) - Complete technical documentation
 - [INTEGRATION_TESTS.md](docs/INTEGRATION_TESTS.md) - Testing documentation
+- [FREE_HOSTING_32GB_RAM_RESEARCH.md](docs/FREE_HOSTING_32GB_RAM_RESEARCH.md) - Research on free hosting options with 32GB+ RAM
 
 ## Next steps
 
