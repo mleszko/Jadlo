@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-After thorough research of cloud hosting options in 2024, **no major cloud provider offers an always-free tier with 32GB of RAM**. Free tiers are designed for learning, prototyping, and small workloads, typically providing 1-2GB of RAM at most.
+After thorough research of cloud hosting options in 2024-2025, **no major cloud provider offers an always-free tier with 32GB of RAM**. Free tiers are designed for learning, prototyping, and small workloads, typically providing 1-2GB of RAM at most.
 
 This document outlines the available options, alternatives, and recommendations for obtaining high-memory hosting for the Jadlo project.
 
@@ -341,4 +341,4 @@ These are optimized for production and use less memory than OSMnx.
 
 ---
 
-**Research Date**: November 2024
+**Research Date**: November 2025
