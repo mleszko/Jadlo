@@ -127,6 +127,42 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for step-by-step instructions to deploy on:
 - GitHub Pages + separate backend
 - Fly.io
 
+## Testing in Codespaces
+
+GitHub Codespaces provides a cloud-based development environment that's perfect for testing Jadlo. The Codespace comes with Python and system dependencies (GEOS/PROJ/GDAL) pre-installed.
+
+### Quick Test (One Command)
+
+To quickly test route generation in a Codespace, run:
+
+```bash
+PYTHONPATH=. python scripts/test_codespace.py
+```
+
+This will:
+- Generate a short ~10km test route in the Warsaw area
+- Save the result as `test_route_codespace.gpx`
+- Complete in 30-60 seconds
+- Print success message with route details
+
+### Running Other Examples in Codespace
+
+After testing with the quick script, you can try other examples:
+
+```bash
+# Small route (fast, ~1-2 minutes)
+PYTHONPATH=. python scripts/run_poc.py --start 52.2297 21.0122 --end 52.3300 21.2518 --radius 3000 --out poc_route_3km.gpx
+
+# Long segmented route (slower, ~5-10 minutes)
+PYTHONPATH=. python scripts/run_poc_segmented.py --start 52.2297 21.0122 --end 53.1325 23.1688 --segment-km 20 --radius 8000 --out poc_route_100km_segmented.gpx
+```
+
+**Codespace Tips:**
+- The first run may take longer as OSMnx downloads and caches OpenStreetMap data
+- Cached data is stored in the `cache/` directory for faster subsequent runs
+- For long routes, use the segmented runner to avoid memory issues
+- Generated GPX files can be downloaded from the Codespace file explorer
+
 ## Technical notes & limitations
 
 - `osmnx` and the Overpass API: downloading a large OSM area can be memory-intensive and may hit Overpass limits (504/429). For long routes we use segmentation or a dedicated routing server.
@@ -187,6 +223,8 @@ PYTHONPATH=. python -m pytest tests/test_generate_100km.py -v -s
 1. Performance: 100km route generation < 3 minutes
 2. Quality: No gaps > 1km in routes
 3. Surface preference: >80% paved roads with high surface_weight_factor
+
+**Note:** These integration tests are automatically run by GitHub Actions on every commit to ensure code quality. See `.github/workflows/README.md` for details about the CI/CD pipeline.
 
 ### Skip integration tests
 ```bash
