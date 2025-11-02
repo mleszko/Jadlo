@@ -77,18 +77,21 @@ Based on typical OSM data density in Poland and similar analyses:
 
 | Metric | Estimated Value |
 |--------|----------------|
-| Download time | 30-60+ minutes |
-| Memory usage | 8-16 GB |
-| Storage size | 1.5-3 GB |
-| Nodes | ~1,600,000-3,200,000 |
-| Edges | ~4,000,000-8,000,000 |
-| Load time | 10-30 seconds |
+| Download time | 24+ hours |
+| Memory usage | 30-90 GB |
+| Storage size | 15-25 GB |
+| Nodes | ~49,000,000 |
+| Edges | ~116,000,000 |
+| Load time | 30-60 seconds |
 
 **Verdict:** ❌ **Not recommended for on-demand download**
 - Very likely to hit Overpass API limits (timeout/rate limit)
-- Requires substantial server resources (16GB+ RAM)
+- Requires substantial server resources (90GB+ RAM peak)
 - Long download times make on-demand impractical
+- OSMnx NetworkX format is unoptimized (see comparison below)
 - Better alternatives exist (see below)
+
+**Note:** These sizes are for OSMnx's NetworkX graph format (Python pickle), which is much larger than optimized routing engines. See [GRAPH_SIZE_COMPARISON.md](GRAPH_SIZE_COMPARISON.md) for why OSMnx graphs are 10-60x larger than Google Maps or GraphHopper.
 
 ## Key Findings
 
@@ -107,7 +110,30 @@ Graph building requires:
 - **In-memory graph**: 2-4x the stored size during processing
 - **Peak memory**: Can spike to 5-10x during complex operations
 
-**For 200km radius:** Expect 10-20 GB peak memory usage
+**For 200km radius:** Expect 30-90 GB peak memory usage
+
+### 2.5. Why So Large? OSMnx vs Google Maps
+
+**Common question:** "Google Maps offline for Poland is ~1 GB, why is OSMnx graph 20 GB?"
+
+**Answer:** OSMnx NetworkX graphs are **unoptimized development tools**, not production formats:
+
+| Format | Poland Size | Optimization Level |
+|--------|-------------|-------------------|
+| Google Maps | ~1 GB | Maximum (proprietary) |
+| GraphHopper | ~2 GB | High (production) |
+| OSMnx NetworkX | ~60-80 GB | None (development) |
+
+**Why 60x larger?**
+- Python pickle format (not compressed)
+- Full NetworkX graph with Python object overhead
+- All OSM metadata preserved
+- Shapely geometries (full precision)
+- Designed for flexibility, not size
+
+**See [GRAPH_SIZE_COMPARISON.md](GRAPH_SIZE_COMPARISON.md) for detailed explanation.**
+
+This is why we recommend GraphHopper/Valhalla for production - they achieve Google Maps-like efficiency.
 
 ### 3. Storage Scaling
 

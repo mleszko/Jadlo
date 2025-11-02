@@ -6,13 +6,15 @@
 
 **Answer:** ❌ **NOT RECOMMENDED**
 
-- **Storage:** ~20 GB
+- **Storage:** ~20 GB (OSMnx NetworkX format)
 - **Memory:** ~90 GB peak
 - **Download:** ~24 hours (will likely fail)
 - **Risk:** Very High
 
+**Why so large?** OSMnx uses unoptimized Python pickle format. See [GRAPH_SIZE_COMPARISON.md](GRAPH_SIZE_COMPARISON.md) for comparison with Google Maps (~1 GB) and GraphHopper (~2 GB for all Poland).
+
 **Better alternatives:**
-1. ✅ Use GraphHopper/Valhalla (~200 MB RAM, millisecond queries)
+1. ✅ Use GraphHopper/Valhalla (~2 GB for Poland, millisecond queries)
 2. ✅ Keep current segmented approach (already works)
 3. ⚠️ Prebuilt graphs for 20-50km city centers only
 
