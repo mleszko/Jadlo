@@ -1,6 +1,83 @@
-# Integration Tests for PR Merge Requirements
+# Testing Documentation
 
-This document describes the integration tests created to validate the surface-based routing implementation before merging to main.
+This document describes the test suites available for validating the Jadlo routing implementation.
+
+## Test Categories
+
+### 1. Unit Tests (Fast)
+Basic tests for routing algorithm components without network access.
+- Location: `tests/test_weight.py`, `tests/test_routing.py`, `tests/test_surface_routing.py`
+- Run time: < 5 seconds
+- No network required
+
+### 2. Regression Tests (Fast)
+Tests to ensure GPX generation and parameter behavior remains stable across code changes.
+- Location: `tests/test_gpx_regression.py`
+- Run time: < 5 seconds
+- No network required
+- Run before testing new settings/algorithms
+
+### 3. Integration Tests (Slow)
+End-to-end tests that fetch real OSM data and generate routes.
+- Location: `tests/test_integration_requirements.py`, `tests/test_generate_100km.py`
+- Run time: 2-5 minutes
+- Network required
+
+---
+
+## Regression Test Suite: `test_gpx_regression.py`
+
+### Purpose
+Regression tests ensure that the routing algorithm and GPX generation remain stable when making changes to the codebase. These tests are essential when experimenting with new settings, algorithms, or parameters.
+
+### What's Tested
+
+**GPX Structure & Format:**
+- XML structure validation
+- Required GPX 1.1 elements (tracks, segments, points)
+- Valid coordinate ranges (lat: -90 to 90, lon: -180 to 180)
+- Coordinate ordering and path continuity
+- Detection of duplicate consecutive points
+
+**Edge Weight Calculation Consistency:**
+- Consistent results for same inputs across code changes
+- Surface weight factor progression (0.5 to 2.5)
+- Parameter effects (prefer_unpaved, prefer_main_roads, heatmap_influence)
+- Combined parameter interactions
+- Edge cases (unknown surfaces, compound types, highway lists)
+
+**Parameter Stability:**
+- All valid parameter combinations produce reasonable weights
+- No NaN or infinite values
+- Weights scale appropriately with distance
+- Surface penalties work as expected
+
+### Running Regression Tests
+
+```bash
+# Run all regression tests
+PYTHONPATH=. python -m pytest tests/test_gpx_regression.py -v
+
+# Run specific test
+PYTHONPATH=. python -m pytest tests/test_gpx_regression.py::test_edge_weight_calculation_consistency -v
+```
+
+### When to Run
+
+**Always run regression tests when:**
+- Modifying routing algorithm code
+- Changing parameter calculations
+- Adding new parameters or settings
+- Refactoring weight calculation logic
+- Before committing algorithm changes
+
+**Expected result:** All 14 tests should pass. Any failures indicate breaking changes.
+
+---
+
+## Integration Tests for PR Merge Requirements
+
+This section describes the integration tests created to validate the surface-based routing implementation before merging to main.
 
 ## Test Suite: `test_integration_requirements.py`
 

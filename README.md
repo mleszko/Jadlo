@@ -216,6 +216,21 @@ Run unit tests that don't require network access:
 PYTHONPATH=. python -m pytest tests/test_weight.py tests/test_routing.py tests/test_surface_routing.py -v
 ```
 
+### Regression tests (fast)
+Run regression tests to ensure GPX generation and parameter behavior remains stable:
+```bash
+PYTHONPATH=. python -m pytest tests/test_gpx_regression.py -v
+```
+
+These tests validate:
+- GPX XML structure and format compliance
+- Parameter consistency (same input produces consistent output)
+- Route quality (coordinates, ordering, no duplicates)
+- Edge weight calculation stability across code changes
+- All parameter combinations work correctly
+
+Run regression tests when making changes to routing algorithms or parameters to ensure backward compatibility.
+
 ### Integration tests (require network)
 Integration tests fetch OSM data and may take several minutes:
 
