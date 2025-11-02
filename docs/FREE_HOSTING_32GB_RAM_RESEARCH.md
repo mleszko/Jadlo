@@ -364,6 +364,93 @@ For workloads that can fit in lower memory:
    - Use reserved IP addresses to maintain configuration
    - Storage costs separate (~$0.10/GB/month for stopped instance volumes)
 
+#### On-Demand Per-Request Architecture
+
+**Start instances only when users request GPX generation** - Pay per-minute/per-second:
+
+**How it works**:
+1. User makes GPX generation request via API
+2. Lambda/Cloud Function starts stopped EC2 instance
+3. Request queued or user waits for instance to boot
+4. Instance processes route generation
+5. Instance auto-stops after job completes
+
+**Typical Flow**:
+```
+User Request → API Gateway → Lambda (start EC2) 
+  → Wait 40-90s for boot → Process job → Auto-stop EC2
+```
+
+**Cost Analysis**:
+- **Per-request cost**: ~$0.38/hour ÷ 60 = ~$0.006/minute
+- **Startup overhead**: 40-90 seconds (standard), 5-10s (optimized)
+- **Job duration**: Varies (e.g., 5-30 minutes for route generation)
+- **Example**: 10-minute job = 10 × $0.006 = **~$0.06 per request**
+
+**With startup overhead**:
+- Standard (60s boot + 10min job): 11 minutes = **~$0.07 per request**
+- Optimized (10s boot + 10min job): 10.17 minutes = **~$0.06 per request**
+
+**Monthly costs (assuming 10-minute jobs)**:
+- 10 requests/month: **$0.70**
+- 50 requests/month: **$3.50**
+- 100 requests/month: **$7.00**
+
+**Pros**:
+- Ultra-low cost - pay only for actual usage
+- Perfect for sporadic, unpredictable usage patterns
+- No cost when idle (except minimal storage)
+- Scales automatically with demand
+
+**Cons**:
+- User wait time: 40-90 seconds for instance to boot (can be optimized to 5-10s)
+- Additional complexity: requires Lambda, API Gateway, queue setup
+- Cold start penalty on every request
+- Not suitable for real-time/instant responses
+
+**Implementation Options**:
+
+1. **AWS Architecture**:
+   - API Gateway + Lambda (start EC2) + SQS (queue) + EC2 (process) + Lambda (stop EC2)
+   - Lambda IAM role needs `ec2:StartInstances`, `ec2:StopInstances`, `ec2:DescribeInstances`
+   - Use CloudWatch to trigger auto-stop after idle time
+
+2. **Google Cloud Architecture**:
+   - Cloud Functions + Cloud Scheduler + Compute Engine
+   - Similar pattern with GCP-specific services
+
+3. **Azure Architecture**:
+   - Azure Functions + Logic Apps + VM
+   - Azure Automation for VM lifecycle management
+
+**Optimizations**:
+- **Reduce boot time**:
+  - Custom minimal AMI with pre-installed dependencies
+  - Small root EBS volume
+  - Optimized init scripts
+  - Can achieve 5-10s boot time (vs. 40-90s default)
+  
+- **Alternative: Keep instance running**:
+  - If requests come within 1-2 hours of each other
+  - Set auto-stop timer (e.g., stop after 30 minutes idle)
+  - Reduces cost while improving response time
+
+- **Hybrid approach**:
+  - Use Render.com free tier for light requests
+  - Trigger high-memory EC2 only for complex routes
+  - Queue system to handle both paths
+
+**Best for**:
+- Unpredictable usage patterns
+- Cost-sensitive applications
+- Non-time-critical route generation
+- Development/testing environments
+
+**Not recommended if**:
+- Need instant responses (<1 minute)
+- High request volume (>100/day) - better to keep instance running
+- Users expect real-time processing
+
 ### 6.5 Self-Hosting
 
 For complete control:
@@ -411,6 +498,31 @@ For complete control:
 
 See [Section 6.4](#64-occasional-use-2-10-times-per-month) for detailed pricing and automation tips.
 
+### 7.2.1 Per-Request On-Demand (Ultra-Low Cost)
+
+**Start instances only when users request GPX generation**:
+
+**Architecture**: API Gateway → Lambda (start EC2) → Process → Auto-stop
+
+**Cost per request**:
+- 10-minute route generation: **~$0.06-$0.07** (including boot time)
+- 100 requests/month: **~$7/month**
+- Pay per-second billing
+
+**Pros**:
+- Ultra-low cost for unpredictable/sporadic usage
+- No cost when idle
+- Perfect for development or low-traffic applications
+
+**Cons**:
+- 40-90 second wait time for boot (can be optimized to 5-10s)
+- Additional setup complexity (Lambda, API Gateway, queues)
+- Not suitable for real-time responses
+
+**Best for**: Unpredictable usage, cost-sensitive apps, or when users can wait 1-2 minutes.
+
+See subsection "On-Demand Per-Request Architecture" in [Section 6.4](#64-occasional-use-2-10-times-per-month) for implementation details.
+
 ### 7.3 For Continuous/Heavy Usage
 
 If 32GB RAM is required 24/7 or very frequently:
@@ -446,14 +558,18 @@ These are optimized for production and use less memory than OSMnx.
 **Best Available Options**:
 1. **Oracle Cloud**: 24GB ARM (closest to requirement)
 2. **Academic credits**: $5,000-$10,000 for research projects
-3. **Occasional use on-demand**: $6-$31/month for 2-10 uses
-4. **Occasional use spot**: $1.60-$10/month for 2-10 uses
-5. **Trial credits**: Temporary access to high-memory instances
-6. **Paid tiers**: Required for sustained 24/7 workloads
+3. **Per-request on-demand**: ~$0.06-$0.07 per request, ~$7/100 requests
+4. **Occasional use on-demand**: $6-$31/month for 2-10 uses
+5. **Occasional use spot**: $1.60-$10/month for 2-10 uses
+6. **Trial credits**: Temporary access to high-memory instances
+7. **Paid tiers**: Required for sustained 24/7 workloads
 
 **For Jadlo Project**:
 - Current Render.com setup is appropriate for demonstration
 - Memory optimization strategies are already in place
+- **For unpredictable/sporadic usage**:
+  - Per-request on-demand: ~$0.06/request (user waits 40-90s for boot)
+  - Ultra-low cost for occasional use
 - **For occasional heavy processing** (2-10 times/month):
   - On-demand instances: $6-$31/month (reliable)
   - Spot instances: $1.60-$10/month (cost-optimized)
