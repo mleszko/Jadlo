@@ -219,6 +219,10 @@ PYTHONPATH=. python -m pytest tests/test_weight.py tests/test_routing.py tests/t
 ### Regression tests (fast)
 Run regression tests to ensure GPX generation and parameter behavior remains stable:
 ```bash
+# Using the convenience script
+./scripts/run_regression_tests.sh
+
+# Or directly with pytest
 PYTHONPATH=. python -m pytest tests/test_gpx_regression.py -v
 ```
 
@@ -229,7 +233,7 @@ These tests validate:
 - Edge weight calculation stability across code changes
 - All parameter combinations work correctly
 
-Run regression tests when making changes to routing algorithms or parameters to ensure backward compatibility.
+**Use case:** Run regression tests before testing new settings or algorithms to ensure existing functionality still works correctly.
 
 ### Integration tests (require network)
 Integration tests fetch OSM data and may take several minutes:
