@@ -4,6 +4,24 @@ This repository contains a proof-of-concept backend for planning routes (GPX) wi
 
 Note: This PoC uses `osmnx` for quick experimentation and validation of routing heuristics. For production, we recommend a dedicated routing engine (GraphHopper, Valhalla, OSRM, OpenRouteService) with prebuilt OSM extracts.
 
+## Algorithm Choice: Dijkstra's Algorithm & A*
+
+The routing implementation uses **Dijkstra's algorithm** (via NetworkX's `shortest_path`) for standard routing and **A*** for intersection-based routing. These algorithms are well-suited for finding optimal routes based on weighted edge values.
+
+**Why Dijkstra/A*?**
+- Both algorithms guarantee finding the optimal path based on edge weights
+- Dijkstra's algorithm explores all possible paths efficiently
+- A* adds a geographic heuristic for faster computation in intersection-based routing
+- They naturally support custom edge weights that combine multiple factors (distance, surface, road type)
+
+**Surface-Based Route Calculation:**
+The route value calculation emphasizes **surface type** as a primary factor:
+- Each surface type (asphalt, gravel, dirt, etc.) has a penalty multiplier
+- The `surface_weight_factor` parameter controls how strongly surface influences route selection
+- Higher values (e.g., 2.0) mean surface quality dominates route choice
+- Lower values (e.g., 0.5) mean distance becomes relatively more important
+- The algorithm finds the optimal balance between distance and surface preference
+
 ## What's in the repo
 
 - `app/main.py` — minimal FastAPI app exposing a POST `/route` endpoint.
@@ -41,9 +59,19 @@ uvicorn app.main:app --reload
 {
 	"start": [52.2297, 21.0122],
 	"end": [53.1325, 23.1688],
-	"params": { "prefer_main_roads": 0.5, "prefer_unpaved": 0.2, "heatmap_influence": 0.0 }
+	"params": { 
+		"prefer_main_roads": 0.5, 
+		"prefer_unpaved": 0.2, 
+		"heatmap_influence": 0.0,
+		"surface_weight_factor": 1.5
+	}
 }
 ```
+
+**Parameter guide for surface-based routing:**
+- `surface_weight_factor`: 1.0 = default balance, 2.0 = strongly prefer better surfaces, 0.5 = prioritize shorter distance
+- `prefer_unpaved`: 1.0 = prefer gravel/dirt, 0.0 = avoid unpaved surfaces
+- `prefer_main_roads`: 1.0 = prefer highways, 0.0 = prefer smaller roads
 
 4) Quick CLI runs (single segment and segmented runner):
 
@@ -85,8 +113,33 @@ The debugger or terminal must also use the Python interpreter that has `osmnx` a
 
 ## Running tests
 
-- Fast unit/smoke tests (no network) run quickly. Integration tests in `tests/` may fetch OSM data and can take minutes or be skipped when `osmnx` is unavailable.
-- To run all tests quickly (skip long integration ones), use pytest markers or run individual test files.
+### Unit tests (fast)
+Run unit tests that don't require network access:
+```bash
+PYTHONPATH=. python -m pytest tests/test_weight.py tests/test_routing.py tests/test_surface_routing.py -v
+```
+
+### Integration tests (require network)
+Integration tests fetch OSM data and may take several minutes:
+
+```bash
+# Run all integration tests
+PYTHONPATH=. python -m pytest -m integration -v -s
+
+# Run specific integration test suites
+PYTHONPATH=. python -m pytest tests/test_integration_requirements.py -v -s
+PYTHONPATH=. python -m pytest tests/test_generate_100km.py -v -s
+```
+
+**Integration test requirements (see `docs/INTEGRATION_TESTS.md`):**
+1. Performance: 100km route generation < 3 minutes
+2. Quality: No gaps > 1km in routes
+3. Surface preference: >80% paved roads with high surface_weight_factor
+
+### Skip integration tests
+```bash
+PYTHONPATH=. python -m pytest -m "not integration" -v
+```
 
 ## Artifacts and cache
 

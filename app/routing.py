@@ -1,3 +1,24 @@
+"""
+Routing module for Jadlo route planner.
+
+This module implements route calculation using Dijkstra's algorithm (via NetworkX's shortest_path)
+and A* algorithm (for intersection-based routing). Routes are calculated based on customizable
+edge weights that consider:
+- Road surface type (primary factor for route quality)
+- Highway classification
+- User preferences (main roads, unpaved surfaces, heatmap data)
+
+The algorithm choice:
+- Dijkstra's algorithm is used for standard routing (compute_route function)
+- A* with geographic heuristic is used for intersection-based routing (compute_route_intersections)
+- Both algorithms find optimal routes based on weighted edge values
+
+Surface-based routing:
+The route value calculation emphasizes surface type as requested, allowing users to:
+- Prefer specific surface types (paved vs unpaved)
+- Control the weight/importance of surface in route selection via surface_weight_factor
+- Balance between shortest distance and preferred surface quality
+"""
 import os
 from typing import Tuple, List, Dict, Any
 import gpxpy
@@ -24,6 +45,8 @@ HIGHWAY_PENALTIES = {
     'path': 0.9,
 }
 
+# Surface penalties - these are multiplied by the surface_weight_factor parameter
+# to control how strongly surface type influences route selection
 SURFACE_PENALTIES = {
     'paved': 1.0,
     'asphalt': 1.0,
@@ -34,7 +57,54 @@ SURFACE_PENALTIES = {
 }
 
 
+def _get_surface_penalty(surface: str) -> float:
+    """Get base surface penalty for a given surface type.
+    
+    Handles compound surface types (e.g., 'asphalt:lanes') by checking the prefix.
+    Returns 1.0 (neutral) for unknown surface types.
+    
+    Args:
+        surface: Surface type string from OSM data
+        
+    Returns:
+        float: Base penalty multiplier for this surface type
+    """
+    # Try exact match first
+    penalty = SURFACE_PENALTIES.get(surface)
+    if penalty is not None:
+        return penalty
+    
+    # Handle compound surface types (e.g., 'asphalt:lanes' -> check 'asphalt')
+    if ':' in surface:
+        base_type = surface.split(':')[0]
+        penalty = SURFACE_PENALTIES.get(base_type)
+        if penalty is not None:
+            return penalty
+    
+    # Default to neutral penalty for unknown surfaces
+    return 1.0
+
+
 def _edge_penalty(u, v, key, data, params: Dict[str, Any]) -> float:
+    """Calculate edge weight/penalty based on route preferences.
+    
+    The weight calculation uses Dijkstra's algorithm (or A*) to find optimal routes.
+    Surface type is a primary factor in route value calculation.
+    
+    Args:
+        u, v, key: Edge identifiers
+        data: Edge data containing length, highway, surface attributes
+        params: User preferences including:
+            - surface_weight_factor: Multiplier for surface penalty (default 1.0)
+                Higher values = surface type has more influence on route choice
+                Lower values = distance becomes relatively more important
+            - prefer_main_roads: 0=avoid, 1=prefer main roads
+            - prefer_unpaved: 0=avoid, 1=prefer unpaved surfaces
+            - heatmap_influence: 0=ignore, 1=follow heatmap strongly
+            
+    Returns:
+        float: Edge weight (lower is better, used by Dijkstra/A* algorithm)
+    """
     # base: length in meters
     length = data.get('length', 1.0)
 
@@ -44,11 +114,17 @@ def _edge_penalty(u, v, key, data, params: Dict[str, Any]) -> float:
         highway = highway[0]
     hp = HIGHWAY_PENALTIES.get(highway, 1.0)
 
-    # surface penalty
+    # Surface penalty - this is the primary factor for route value by surface
+    # The surface_weight_factor parameter controls how strongly surface influences the route
     surface = data.get('surface')
     sp = 1.0
     if surface:
-        sp = SURFACE_PENALTIES.get(surface, SURFACE_PENALTIES.get(surface.split(':')[0], 1.0))
+        base_sp = _get_surface_penalty(surface)
+        # Apply surface_weight_factor: higher factor = surface matters more in route choice
+        surface_weight_factor = params.get('surface_weight_factor', 1.0)
+        # Convert penalty from base using exponential scaling for stronger effect
+        # sp = base_sp ^ surface_weight_factor gives stronger differentiation
+        sp = base_sp ** surface_weight_factor
 
     # prefer_main_roads: if user prefers main roads, we reduce penalty for main roads
     prefer_main = params.get('prefer_main_roads', 0.5)
@@ -60,6 +136,7 @@ def _edge_penalty(u, v, key, data, params: Dict[str, Any]) -> float:
     # prefer_unpaved: if user prefers unpaved, decrease penalty for gravel/unpaved
     prefer_unpaved = params.get('prefer_unpaved', 0.5)
     if surface in ('gravel', 'unpaved', 'dirt'):
+        # Additional adjustment beyond base surface penalty for user who explicitly prefers unpaved
         sp = sp * (1.0 - 0.5 * (prefer_unpaved - 0.5))
 
     # heatmap influence: PoC - we don't have heatmap data, so we mock by looking for 'cycleway' tag
@@ -71,8 +148,45 @@ def _edge_penalty(u, v, key, data, params: Dict[str, Any]) -> float:
     # streetview preference: PoC - not implemented, neutral
     streetview_pref = params.get('prefer_streetview', 0.0)
 
+    # Final weight calculation: combines all factors
+    # This weight is used by Dijkstra's algorithm to find the optimal route
     weight = length * hp * sp * heatmap_bonus
     return weight
+
+
+def calculate_edge_weight(length: float, highway: str, surface: str | None, params: Dict[str, Any]) -> float:
+    """Public API: Calculate edge weight for a road segment.
+    
+    This is a public wrapper around _edge_penalty for testing and external use.
+    It calculates how the routing algorithm (Dijkstra/A*) will weight a road segment.
+    
+    Args:
+        length: Length of road segment in meters
+        highway: Highway type (e.g., 'residential', 'primary', 'cycleway')
+        surface: Surface type (e.g., 'asphalt', 'gravel', 'dirt'), or None if unknown
+        params: Routing parameters including:
+            - surface_weight_factor: How strongly surface affects routing (default 1.0)
+            - prefer_main_roads: 0=avoid, 1=prefer main roads
+            - prefer_unpaved: 0=avoid, 1=prefer unpaved surfaces
+            - heatmap_influence: 0=ignore, 1=follow heatmap
+            
+    Returns:
+        float: Edge weight (lower is better, used by Dijkstra's algorithm)
+        
+    Example:
+        >>> params = {'surface_weight_factor': 2.0, 'prefer_main_roads': 0.5, 
+        ...           'prefer_unpaved': 0.5, 'heatmap_influence': 0.0}
+        >>> weight_paved = calculate_edge_weight(100.0, 'residential', 'asphalt', params)
+        >>> weight_dirt = calculate_edge_weight(100.0, 'residential', 'dirt', params)
+        >>> # dirt road will have higher weight (less preferred)
+        >>> assert weight_dirt > weight_paved
+    """
+    edge_data = {
+        'length': length,
+        'highway': highway,
+        'surface': surface,
+    }
+    return _edge_penalty(None, None, None, edge_data, params)
 
 
 def _haversine(a: Tuple[float, float], b: Tuple[float, float]) -> float:
