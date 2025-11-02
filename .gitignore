@@ -8,6 +8,8 @@ venv/
 # OSMnx/Overpass cache and generated artifacts
 cache/
 artifacts/
+# Test-generated GPX files
+test_route_codespace.gpx
 
 # Editor
 .vscode/
