@@ -14,6 +14,33 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - name: "30km route performance"
+            test_path: "tests/test_integration_requirements.py::test_30km_route_performance"
+            timeout: 15
+            description: "Performance test - 30km route generation"
+          - name: "60km route performance"
+            test_path: "tests/test_integration_requirements.py::test_60km_route_performance"
+            timeout: 20
+            description: "Performance test - 60km route generation"
+          - name: "100km route performance"
+            test_path: "tests/test_integration_requirements.py::test_100km_route_performance"
+            timeout: 25
+            description: "Performance test - 100km route generation"
+          - name: "100km route gap quality"
+            test_path: "tests/test_integration_requirements.py::test_100km_route_no_large_gaps"
+            timeout: 25
+            description: "Quality test - Check for gaps in 100km route"
+          - name: "Paved surface preference"
+            test_path: "tests/test_integration_requirements.py::test_100km_route_paved_surface_preference"
+            timeout: 15
+            description: "Surface preference test - Paved surface routing"
+    
+    name: ${{ matrix.test.description }}
+    timeout-minutes: ${{ matrix.test.timeout }}
     
     steps:
     - name: Checkout code
@@ -34,68 +61,21 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    # Run integration tests separately with descriptive names
-    # Performance tests verify route generation completes within time limits
-    # and display generation time for monitoring
-    - name: Performance test - 30km route generation
+    - name: Run test - ${{ matrix.test.name }}
       run: |
-        PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_30km_route_performance -v -s --tb=short
-      timeout-minutes: 8
+        PYTHONPATH=. python -m pytest ${{ matrix.test.test_path }} -v -s --tb=short
       env:
         PYTHONDONTWRITEBYTECODE: 1
     
-    - name: Performance test - 60km route generation
+    - name: Test result summary
+      if: always()
       run: |
-        PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_60km_route_performance -v -s --tb=short
-      timeout-minutes: 10
-      env:
-        PYTHONDONTWRITEBYTECODE: 1
-    
-    - name: Performance test - 100km route generation
-      run: |
-        PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_100km_route_performance -v -s --tb=short
-      timeout-minutes: 12
-      env:
-        PYTHONDONTWRITEBYTECODE: 1
-    
-    # Quality tests verify no gaps/straight lines >1km in generated routes
-    - name: Quality test - Check for gaps in 100km route
-      run: |
-        PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_100km_route_no_large_gaps -v -s --tb=short
-      timeout-minutes: 12
-      env:
-        PYTHONDONTWRITEBYTECODE: 1
-    
-    # Surface preference test verifies >80% paved roads when configured
-    - name: Surface preference test - Paved surface routing
-      run: |
-        PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_100km_route_paved_surface_preference -v -s --tb=short
-      timeout-minutes: 8
-      env:
-        PYTHONDONTWRITEBYTECODE: 1
-    
-    - name: Test results summary (success)
-      if: success()
-      run: |
-        echo "## ✅ Route Quality Check Results" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "All integration tests passed!" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Requirements Verified:" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Route generation performance: 30km route <120s, 60km route <180s, 100km route <300s" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ No gaps/straight lines >1km in generated routes" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Surface preference working correctly (>80% paved when configured)" >> $GITHUB_STEP_SUMMARY
-    
-    - name: Test results summary (failure)
-      if: failure()
-      run: |
-        echo "## ❌ Route Quality Check Failed" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "One or more integration tests failed. This commit does not meet quality requirements:" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Requirements:" >> $GITHUB_STEP_SUMMARY
-        echo "- Route generation must complete in time: 30km <120s, 60km <180s, 100km <300s" >> $GITHUB_STEP_SUMMARY
-        echo "- Routes must have no gaps/straight lines >1km" >> $GITHUB_STEP_SUMMARY
-        echo "- Routes with paved preference must have >80% paved roads" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Please review the test output above for details." >> $GITHUB_STEP_SUMMARY
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "## ✅ ${{ matrix.test.description }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Test passed successfully!" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "## ❌ ${{ matrix.test.description }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Test failed. Please review the output above for details." >> $GITHUB_STEP_SUMMARY
+        fi
