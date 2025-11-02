@@ -15,8 +15,8 @@ This directory contains GitHub Actions workflows for automated testing and quali
 
 **Requirements Validated:**
 
-1. **Performance**: Route generation for 100km routes must complete within 5 minutes
-   - Current test validates completion within 3 minutes (well under the limit)
+1. **Performance**: Route generation for 100km routes must complete within 3 minutes (180 seconds)
+   - Original requirement was <5 minutes; tests enforce the stricter 3-minute limit
    
 2. **Route Quality**: No gaps or straight lines larger than 1km
    - Ensures routes follow actual road networks
