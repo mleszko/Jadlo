@@ -52,12 +52,13 @@ echo ""
 
 echo -e "${BLUE}Step 4: Configuring firewall...${NC}"
 # Allow SSH (port 22) - important!
-sudo ufw allow 22/tcp > /dev/null 2>&1 || true
+sudo ufw allow 22/tcp
 # Allow application port (8000)
-sudo ufw allow 8000/tcp > /dev/null 2>&1 || true
+sudo ufw allow 8000/tcp
 # Enable firewall
-echo "y" | sudo ufw enable > /dev/null 2>&1 || true
+echo "y" | sudo ufw enable
 echo -e "${GREEN}✓ Firewall configured${NC}"
+sudo ufw status
 echo ""
 
 echo -e "${BLUE}Step 5: Cloning Jadlo repository...${NC}"
@@ -99,8 +100,8 @@ echo ""
 echo -e "${BLUE}Step 9: Waiting for application to be ready...${NC}"
 # Wait for application to start (max 60 seconds)
 for i in {1..12}; do
-    if docker ps | grep -q jadlo-route-planner; then
-        if docker exec jadlo-route-planner curl -f http://localhost:8000/health > /dev/null 2>&1; then
+    if docker compose ps | grep -q "running"; then
+        if docker compose exec -T jadlo-app curl -f http://localhost:8000/health > /dev/null 2>&1; then
             echo -e "${GREEN}✓ Application is ready!${NC}"
             break
         fi
@@ -111,7 +112,7 @@ done
 echo ""
 
 # Get public IP
-PUBLIC_IP=$(curl -s ifconfig.me || echo "Unable to detect")
+PUBLIC_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s icanhazip.com 2>/dev/null || echo "Check OCI Console for Public IP")
 
 echo "============================================"
 echo -e "${GREEN}Installation Complete!${NC}"

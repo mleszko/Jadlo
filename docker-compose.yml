@@ -22,7 +22,9 @@ services:
     deploy:
       resources:
         limits:
-          # Limit memory usage to avoid issues on shared hosting
-          memory: 4G
+          # Limit memory usage (adjust based on instance size)
+          # Oracle Cloud free tier: up to 24GB available
+          # For large routes, increase as needed
+          memory: 8G
         reservations:
-          memory: 1G
+          memory: 2G

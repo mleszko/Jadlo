@@ -12,15 +12,15 @@ After=network.target docker.service
 Requires=docker.service
 
 [Service]
-Type=oneshot
-RemainAfterExit=yes
+Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/Jadlo
-ExecStart=/usr/bin/docker compose up -d
+ExecStart=/usr/bin/docker compose up
 ExecStop=/usr/bin/docker compose down
-ExecReload=/usr/bin/docker compose restart
 StandardOutput=journal
 StandardError=journal
+Restart=on-failure
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target
