@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Script to run regression tests for GPX generation
 # Use this before testing new settings or algorithms to ensure existing functionality still works
 

@@ -160,7 +160,7 @@ def test_edge_weight_calculation_consistency():
         
         (100.0, 'primary', 'asphalt',
          {'prefer_main_roads': 1.0, 'prefer_unpaved': 0.5, 'heatmap_influence': 0.0, 'surface_weight_factor': 1.0},
-         (130.0, 150.0)),  # Primary with prefer should have some penalty
+         (130.0, 150.0)),  # Primary with prefer should have reduced penalty
         
         (100.0, 'residential', 'dirt',
          {'prefer_main_roads': 0.5, 'prefer_unpaved': 0.0, 'heatmap_influence': 0.0, 'surface_weight_factor': 2.0},
@@ -255,8 +255,8 @@ def test_prefer_main_roads_parameter_effect():
     weight_prefer = calculate_edge_weight(100.0, 'primary', 'asphalt', params_prefer)
     
     # When we prefer main roads, penalty should be lower
-    assert weight_prefer < weight_avoid, \
-        "prefer_main_roads=1.0 should reduce penalty for main roads"
+    assert weight_prefer < weight_neutral < weight_avoid, \
+        "prefer_main_roads should progressively reduce penalty for main roads"
 
 
 def test_parameter_combinations_stability():
