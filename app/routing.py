@@ -541,30 +541,30 @@ def compute_route_intersections(start: Tuple[float, float], end: Tuple[float, fl
         # Use pre-computed geometry from simplified graph H
         # Try both directions since H is a DiGraph
         edge_data = H.get_edge_data(a, b) or H.get_edge_data(b, a)
-        if edge_data and 'geometry' in edge_data:
-            geom = edge_data['geometry']
-            if geom is not None and len(geom) > 0:
-                # Add geometry points, avoiding duplicates at segment boundaries
-                for pt in geom:
-                    if not coords or coords[-1] != pt:
-                        coords.append(pt)
-            else:
-                # geometry is empty or missing, fallback to node coords
-                ca = coords_map.get(a)
-                cb = coords_map.get(b)
-                if ca and (not coords or coords[-1] != ca):
-                    coords.append(ca)
-                if cb:
-                    coords.append(cb)
+        geom = edge_data.get('geometry') if edge_data else None
+        
+        if geom is not None and len(geom) > 0:
+            # Add geometry points, avoiding duplicates at segment boundaries
+            for pt in geom:
+                if not coords or coords[-1] != pt:
+                    coords.append(pt)
+        elif geom is not None:
+            # geometry exists but is empty, fallback to node coords
+            ca = coords_map.get(a)
+            cb = coords_map.get(b)
+            if ca and (not coords or coords[-1] != ca):
+                coords.append(ca)
+            if cb:
+                coords.append(cb)
         else:
             # Fallback: no geometry in H, try routing on original graph
             # This should rarely happen if simplification worked correctly
             try:
                 seg_nodes = nx.shortest_path(G, a, b, weight='weight')
-            except Exception:
+            except (nx.NetworkXNoPath, nx.NetworkXError):
                 try:
                     seg_nodes = nx.shortest_path(G, a, b, weight='length')
-                except Exception:
+                except (nx.NetworkXNoPath, nx.NetworkXError):
                     # unable to reconstruct this segment; use straight line between nodes
                     logger.warning('unable to reconstruct segment %s -> %s, using straight line between nodes', a, b)
                     ca = coords_map.get(a)
