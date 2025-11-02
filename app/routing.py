@@ -30,12 +30,16 @@ import time
 
 # Memory optimization configuration for 24GB RAM systems
 # These settings optimize OSMnx and Overpass API queries for systems with ample memory
+MEMORY_ALLOCATION_GB = 20  # Allocate 20GB for Overpass queries (leaving 4GB for system)
+MEMORY_ALLOCATION_BYTES = MEMORY_ALLOCATION_GB * 1024 * 1024 * 1024
+
 ox.settings.use_cache = True
 ox.settings.log_console = True
 ox.settings.timeout = 300  # Increased from default 180s to allow longer queries on 24GB systems
 ox.settings.max_query_area_size = 5000000000  # Increased from 2.5B to 5B for larger route queries
-ox.settings.memory = 20 * 1024 * 1024 * 1024  # Allocate 20GB for Overpass queries (leaving 4GB for system)
-ox.settings.overpass_settings = '[out:json][timeout:{timeout}][maxsize:21474836480]'  # 20GB in bytes
+ox.settings.memory = MEMORY_ALLOCATION_BYTES
+# Note: {timeout} and {maxsize} are placeholders that OSMnx fills in at query time
+ox.settings.overpass_settings = f'[out:json][timeout:{{timeout}}][maxsize:{MEMORY_ALLOCATION_BYTES}]'
 
 logger = logging.getLogger(__name__)
 
