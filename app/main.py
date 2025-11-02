@@ -47,6 +47,12 @@ async def route(req: RouteRequest):
     return {"coords": coords, "gpx": gpx}
 
 
+@app.get('/health')
+async def health():
+    """Health check endpoint for monitoring and load balancers."""
+    return {"status": "healthy", "service": "Jadlo Route Planner"}
+
+
 @app.get('/')
 async def index():
     """Serve the web interface if it exists, otherwise return API info."""

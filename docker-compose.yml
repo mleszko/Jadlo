@@ -1,0 +1,30 @@
+services:
+  jadlo-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jadlo-route-planner
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - PYTHON_VERSION=3.12
+    restart: unless-stopped
+    volumes:
+      # Mount cache directory for OSM data persistence
+      - ./cache:/app/cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          # Limit memory usage (adjust based on instance size)
+          # Oracle Cloud free tier: up to 24GB available
+          # For large routes, increase as needed
+          memory: 8G
+        reservations:
+          memory: 2G

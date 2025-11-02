@@ -1,6 +1,7 @@
 FROM python:3.12-slim
 
 # Install system dependencies for osmnx (GEOS, PROJ, GDAL)
+# Optimized for ARM64 architecture (Oracle Cloud Ampere)
 RUN apt-get update && apt-get install -y \
     libgeos-dev \
     libproj-dev \

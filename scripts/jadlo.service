@@ -1,0 +1,26 @@
+# Systemd service file for Jadlo Route Planner
+# Installation:
+# 1. Copy this file to /etc/systemd/system/jadlo.service
+# 2. Update User, WorkingDirectory paths as needed
+# 3. Run: sudo systemctl daemon-reload
+# 4. Run: sudo systemctl enable jadlo
+# 5. Run: sudo systemctl start jadlo
+
+[Unit]
+Description=Jadlo Route Planner Web Service
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/Jadlo
+ExecStart=/usr/bin/docker compose up
+ExecStop=/usr/bin/docker compose down
+StandardOutput=journal
+StandardError=journal
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
