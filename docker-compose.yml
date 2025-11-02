@@ -24,7 +24,8 @@ services:
         limits:
           # Limit memory usage (adjust based on instance size)
           # Oracle Cloud free tier: up to 24GB available
-          # For large routes, increase as needed
-          memory: 8G
+          # Set to 24G to utilize full Oracle Cloud free tier capacity
+          # For large routes (100km+), full 24GB allows better performance
+          memory: 24G
         reservations:
-          memory: 2G
+          memory: 4G
