@@ -33,20 +33,35 @@ jobs:
         pip install -r requirements.txt
     
     - name: Run route quality integration tests
+      id: tests
       run: |
         PYTHONPATH=. python -m pytest tests/test_integration_requirements.py -v -s --tb=short
       timeout-minutes: 15
       env:
         PYTHONDONTWRITEBYTECODE: 1
     
-    - name: Test results summary
-      if: always()
+    - name: Test results summary (success)
+      if: success()
       run: |
-        echo "## Route Quality Check Results" >> $GITHUB_STEP_SUMMARY
+        echo "## ✅ Route Quality Check Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "✅ All integration tests passed!" >> $GITHUB_STEP_SUMMARY
+        echo "All integration tests passed!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Requirements Verified:" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Route generation performance: <5 minutes (tested at <3 minutes)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ No gaps/straight lines >1km in generated routes" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Surface preference working correctly (>80% paved when configured)" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Test results summary (failure)
+      if: failure()
+      run: |
+        echo "## ❌ Route Quality Check Failed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "One or more integration tests failed. This commit does not meet quality requirements:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Requirements:" >> $GITHUB_STEP_SUMMARY
+        echo "- Route generation must complete in <5 minutes" >> $GITHUB_STEP_SUMMARY
+        echo "- Routes must have no gaps/straight lines >1km" >> $GITHUB_STEP_SUMMARY
+        echo "- Routes with paved preference must have >80% paved roads" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Please review the test output above for details." >> $GITHUB_STEP_SUMMARY
