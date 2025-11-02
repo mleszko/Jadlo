@@ -341,6 +341,4 @@ These are optimized for production and use less memory than OSMnx.
 
 ---
 
-**Document Author**: GitHub Copilot Agent  
-**Last Updated**: November 2, 2024  
 **Research Date**: November 2024
