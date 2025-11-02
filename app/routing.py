@@ -28,7 +28,14 @@ import networkx as nx
 import logging
 import time
 
-ox.config(use_cache=True, log_console=True)
+# Memory optimization configuration for 24GB RAM systems
+# These settings optimize OSMnx and Overpass API queries for systems with ample memory
+ox.settings.use_cache = True
+ox.settings.log_console = True
+ox.settings.timeout = 300  # Increased from default 180s to allow longer queries on 24GB systems
+ox.settings.max_query_area_size = 5000000000  # Increased from 2.5B to 5B for larger route queries
+ox.settings.memory = 20 * 1024 * 1024 * 1024  # Allocate 20GB for Overpass queries (leaving 4GB for system)
+ox.settings.overpass_settings = '[out:json][timeout:{timeout}][maxsize:21474836480]'  # 20GB in bytes
 
 logger = logging.getLogger(__name__)
 
@@ -415,13 +422,16 @@ def simplify_graph_to_intersections(G: nx.MultiDiGraph) -> nx.DiGraph:
         return nx.DiGraph()
 
 
-def compute_route_intersections(start: Tuple[float, float], end: Tuple[float, float], params: Dict[str, Any], radius_meters: float | None = None, heading_threshold_deg: float = 60.0):
+def compute_route_intersections(start: Tuple[float, float], end: Tuple[float, float], params: Dict[str, Any], radius_meters: float | None = 12000, heading_threshold_deg: float = 60.0):
     """Compute a route on a simplified intersection graph using A*.
 
     This method reduces memory by collapsing degree-2 nodes and making decisions only at
     intersections. It also applies a heading bias: edges whose bearing deviates strongly
     from the direction to the final goal can receive an additional penalty unless they match
     user's preferences.
+    
+    Memory optimization note: With 24GB RAM, default radius_meters increased to 12000m (from 8000m)
+    to provide better route coverage while utilizing available memory efficiently.
     """
     lat1, lon1 = start
     lat2, lon2 = end
@@ -611,12 +621,15 @@ def compute_route_intersections(start: Tuple[float, float], end: Tuple[float, fl
     return coords, gpx_str
 
 
-def compute_route(start: Tuple[float, float], end: Tuple[float, float], params: Dict[str, Any], bbox_buffer: float = 0.12, radius_meters: float | None = None):
+def compute_route(start: Tuple[float, float], end: Tuple[float, float], params: Dict[str, Any], bbox_buffer: float = 0.15, radius_meters: float | None = None):
     """PoC: fetch a fragment of the OSM graph between points (bbox with buffer) or around a point (radius_meters),
     compute the shortest route using custom weights.
     Returns list of (lat, lon) and GPX string.
 
     Note: fetching large graphs for long distances can be expensive; in production prefer a dedicated routing server.
+    
+    Memory optimization note: With 24GB RAM, bbox_buffer increased to 0.15 (from 0.12) to allow
+    more comprehensive route options while staying within memory limits.
     """
     lat1, lon1 = start
     lat2, lon2 = end
