@@ -16,9 +16,9 @@ This directory contains GitHub Actions workflows for automated testing and quali
 **Requirements Validated:**
 
 1. **Performance**: Route generation must complete within time limits
-   - 30km routes: <90 seconds
-   - 60km routes: <150 seconds  
-   - 100km routes: <240 seconds (4 minutes)
+   - 30km routes: <120 seconds (2 minutes)
+   - 60km routes: <180 seconds (3 minutes)
+   - 100km routes: <300 seconds (5 minutes)
    - Each test displays generation time and timestamps for monitoring
    
 2. **Route Quality**: No gaps or straight lines larger than 1km
@@ -57,7 +57,7 @@ PYTHONPATH=. python -m pytest tests/test_integration_requirements.py::test_100km
 - Python 3.12
 - System libraries: libgeos-dev, libproj-dev, libgdal-dev (required by osmnx)
 
-**Timeout:** Each test step has its own timeout (5-8 minutes) appropriate for the route distance being tested.
+**Timeout:** Each test step has its own timeout (8-12 minutes) appropriate for the route distance being tested.
 
 **Blocking:** If any test fails, the workflow will fail and block the pull request from being merged.
 
