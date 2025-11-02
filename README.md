@@ -89,6 +89,14 @@ PYTHONPATH=. python scripts/run_poc_segmented.py --start 52.2297 21.0122 --end 5
 - Caching and backoff: the segmented runner caches responses and does simple retries, but production systems should implement stronger caching and backoff strategies.
 - Licensing: OSM data is licensed under ODbL — ensure proper attribution.
 
+## Documentation
+
+For more detailed information:
+- [ROUTING_ALGORITHMS_COMPARISON.md](docs/ROUTING_ALGORITHMS_COMPARISON.md) - Comprehensive comparison of Jadlo's approach with academic research, commercial applications (Strava, Komoot, Google Maps, Apple Maps, etc.), OSM routing engines, and LLM-based routing
+- [ALGORITHM_CHOICE.md](docs/ALGORITHM_CHOICE.md) - Detailed explanation of why Dijkstra's algorithm is used
+- [APPLICATION_DOCUMENTATION.md](docs/APPLICATION_DOCUMENTATION.md) - Complete technical documentation
+- [INTEGRATION_TESTS.md](docs/INTEGRATION_TESTS.md) - Testing documentation
+
 ## Next steps
 
 - Parameterize the API/UI (weight profiles, sliders) — add endpoints and a simple Leaflet demo.
