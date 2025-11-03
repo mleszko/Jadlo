@@ -1,5 +1,11 @@
 # GraphHopper Migration Guide
 
+## TL;DR
+
+- **Setup time:** 30 minutes for basic routing, 1-2 days for full integration
+- **Cost:** $0 (Apache 2.0 license, self-hosted)
+- **Performance:** 500-1000x faster than OSMnx
+
 ## Is GraphHopper Free?
 
 **Yes, GraphHopper is open-source and free to self-host.**
@@ -283,7 +289,21 @@ sudo systemctl start graphhopper
 
 ## Migration Timeline
 
-**Estimated effort:** 1-2 days of development
+### Quick Start (1 hour)
+
+**Just want basic routing?** GraphHopper setup is **very fast**:
+
+1. Download GraphHopper JAR (5 min)
+2. Download Poland OSM data (10 min)
+3. Build graph (5 min)
+4. Start server (instant)
+5. Test API (5 min)
+
+**Total: ~30 minutes** for basic working routing!
+
+### Full Integration (1-2 days)
+
+**To integrate with Jadlo's custom features** (surface routing, parameter controls):
 
 1. **Day 1 Morning:** Setup GraphHopper server
    - Install and configure (1 hour)
@@ -301,6 +321,8 @@ sudo systemctl start graphhopper
 4. **Day 2 Afternoon:** Deploy and test
    - Deploy to Oracle Cloud (1 hour)
    - End-to-end testing (2 hours)
+
+**Note:** The 1-2 days is for **complete integration** with Jadlo's surface-based routing features, not just basic setup. GraphHopper itself installs in under 1 hour.
 
 ## Should You Switch?
 

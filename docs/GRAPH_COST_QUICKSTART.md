@@ -143,4 +143,4 @@ java -jar graphhopper.jar server
 
 **Final Recommendation:** Use GraphHopper/Valhalla for production. For PoC, keep the current segmented approach or use prebuilt graphs for specific 20km city centers only.
 
-**Want to migrate to GraphHopper?** See [GRAPHHOPPER_MIGRATION.md](GRAPHHOPPER_MIGRATION.md) for complete guide (it's free and takes 1-2 days).
+**Want to migrate to GraphHopper?** See [GRAPHHOPPER_MIGRATION.md](GRAPHHOPPER_MIGRATION.md) for complete guide (free, 30 min setup, 1-2 days for full integration).
