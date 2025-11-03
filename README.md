@@ -187,6 +187,7 @@ For more detailed information:
 - [INTEGRATION_TESTS.md](docs/INTEGRATION_TESTS.md) - Testing documentation
 - [PREBUILT_GRAPH_ANALYSIS.md](docs/PREBUILT_GRAPH_ANALYSIS.md) - Analysis of prebuilt graphs for large areas (e.g., 200km radius around Warsaw)
 - [GRAPH_SIZE_COMPARISON.md](docs/GRAPH_SIZE_COMPARISON.md) - Why OSMnx graphs are larger than Google Maps offline data
+- [GRAPHHOPPER_MIGRATION.md](docs/GRAPHHOPPER_MIGRATION.md) - Guide to migrating to GraphHopper (free, production-ready alternative)
 
 ## Next steps
 
