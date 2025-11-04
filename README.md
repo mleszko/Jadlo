@@ -42,6 +42,15 @@ Jadlo implements **two different routing approaches** - choose based on your rou
 
 **📖 New to Jadlo?** See [GRAPH_APPROACHES_QUICK_GUIDE.md](docs/GRAPH_APPROACHES_QUICK_GUIDE.md) for help choosing the right approach and understanding when to use branches vs forks.
 
+**🧪 Compare them yourself:**
+```bash
+# Compare both approaches on a short route
+PYTHONPATH=. python scripts/compare_graph_approaches.py --route short
+
+# Try a long route to see the memory/speed difference
+PYTHONPATH=. python scripts/compare_graph_approaches.py --route long
+```
+
 ## Algorithm Choice: Dijkstra's Algorithm & A*
 
 **Why Dijkstra/A*?**
@@ -65,6 +74,7 @@ The route value calculation emphasizes **surface type** as a primary factor:
 - `static/index.html` — **Web interface** for generating GPX routes with interactive map and parameter controls.
 - `scripts/run_poc.py` — simple CLI to generate a single route and save GPX.
 - `scripts/run_poc_segmented.py` — tool to split long routes into segments, generate each segment and stitch GPX together (useful in resource-constrained environments).
+- `scripts/compare_graph_approaches.py` — **comparison tool to test both routing approaches** and see performance differences.
 - `requirements.txt` — Python dependency list.
 - `DEPLOYMENT.md` — **Complete guide for deploying to free hosting services** (Render, Railway, GitHub Pages).
 
