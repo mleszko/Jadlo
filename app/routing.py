@@ -525,11 +525,10 @@ def compute_route_intersections(start: Tuple[float, float], end: Tuple[float, fl
         logger.exception('A* on intersection graph failed, falling back to compute_route')
         return compute_route(start, end, params, radius_meters=radius_meters)
 
-    # Reconstruct full coordinates by routing on the original graph between
-    # successive intersection nodes. This preserves the original edge geometries
-    # (polylines) so the final GPX follows actual road shapes.
+    # Reconstruct full coordinates using pre-computed geometry from simplified graph.
+    # This avoids expensive re-routing and uses the geometry already stored during simplification.
     coords: List[Tuple[float, float]] = []
-    logger.info('start: reconstruct_coords_from_original_graph')
+    logger.info('start: reconstruct_coords_from_simplified_graph')
     t0 = time.perf_counter()
 
     # helper map of node coords for quick fallback
@@ -538,56 +537,84 @@ def compute_route_intersections(start: Tuple[float, float], end: Tuple[float, fl
     for i in range(len(path) - 1):
         a = path[i]
         b = path[i + 1]
-        try:
-            seg_nodes = nx.shortest_path(G, a, b, weight='weight')
-        except Exception:
+        
+        # Use pre-computed geometry from simplified graph H
+        # Try both directions since H is a DiGraph
+        edge_data = H.get_edge_data(a, b) or H.get_edge_data(b, a)
+        geom = edge_data.get('geometry') if edge_data else None
+        
+        if geom is not None and len(geom) > 0:
+            # Add geometry points, avoiding duplicates at segment boundaries
+            for pt in geom:
+                if not coords or coords[-1] != pt:
+                    coords.append(pt)
+        elif geom is not None:
+            # geometry exists but is empty, fallback to node coords
+            ca = coords_map.get(a)
+            cb = coords_map.get(b)
+            if ca and (not coords or coords[-1] != ca):
+                coords.append(ca)
+            if cb:
+                coords.append(cb)
+        else:
+            # Fallback: no geometry in H, try routing on original graph
+            # This should rarely happen if simplification worked correctly
             try:
-                seg_nodes = nx.shortest_path(G, a, b, weight='length')
-            except Exception:
-                # unable to reconstruct this segment; skip
-                logger.warning('unable to reconstruct segment %s -> %s on original graph', a, b)
-                continue
-
-        # convert the sequence of nodes into coordinates using original edge geometries
-        for j in range(len(seg_nodes) - 1):
-            u = seg_nodes[j]
-            v = seg_nodes[j + 1]
-            ed = G.get_edge_data(u, v) or G.get_edge_data(v, u)
-            if not ed:
-                # fallback to node coords
-                cu = coords_map.get(u)
-                cv = coords_map.get(v)
-                if cu and (not coords or coords[-1] != cu):
-                    coords.append(cu)
-                if cv:
-                    coords.append(cv)
-                continue
-
-            data = next(iter(ed.values()))
-            geom_obj = data.get('geometry')
-            if geom_obj is not None:
+                seg_nodes = nx.shortest_path(G, a, b, weight='weight')
+            except (nx.NetworkXNoPath, nx.NetworkXError):
                 try:
-                    pts = [(lat, lon) for (lon, lat) in geom_obj.coords]
-                    if coords and coords[-1] == pts[0]:
-                        coords.extend(pts[1:])
-                    else:
-                        coords.extend(pts)
-                except Exception:
+                    seg_nodes = nx.shortest_path(G, a, b, weight='length')
+                except (nx.NetworkXNoPath, nx.NetworkXError):
+                    # unable to reconstruct this segment; use straight line between nodes
+                    logger.warning('unable to reconstruct segment %s -> %s, using straight line between nodes', a, b)
+                    ca = coords_map.get(a)
+                    cb = coords_map.get(b)
+                    if ca and (not coords or coords[-1] != ca):
+                        coords.append(ca)
+                    if cb:
+                        coords.append(cb)
+                    continue
+
+            # convert the sequence of nodes into coordinates using original edge geometries
+            for j in range(len(seg_nodes) - 1):
+                u = seg_nodes[j]
+                v = seg_nodes[j + 1]
+                ed = G.get_edge_data(u, v) or G.get_edge_data(v, u)
+                if not ed:
+                    # fallback to node coords
                     cu = coords_map.get(u)
                     cv = coords_map.get(v)
                     if cu and (not coords or coords[-1] != cu):
                         coords.append(cu)
                     if cv:
                         coords.append(cv)
-            else:
-                cu = coords_map.get(u)
-                cv = coords_map.get(v)
-                if cu and (not coords or coords[-1] != cu):
-                    coords.append(cu)
-                if cv:
-                    coords.append(cv)
+                    continue
 
-    logger.info('done: reconstruct_coords_from_original_graph — took %.2f seconds', time.perf_counter() - t0)
+                data = next(iter(ed.values()))
+                geom_obj = data.get('geometry')
+                if geom_obj is not None:
+                    try:
+                        pts = [(lat, lon) for (lon, lat) in geom_obj.coords]
+                        if coords and coords[-1] == pts[0]:
+                            coords.extend(pts[1:])
+                        else:
+                            coords.extend(pts)
+                    except Exception:
+                        cu = coords_map.get(u)
+                        cv = coords_map.get(v)
+                        if cu and (not coords or coords[-1] != cu):
+                            coords.append(cu)
+                        if cv:
+                            coords.append(cv)
+                else:
+                    cu = coords_map.get(u)
+                    cv = coords_map.get(v)
+                    if cu and (not coords or coords[-1] != cu):
+                        coords.append(cu)
+                    if cv:
+                        coords.append(cv)
+
+    logger.info('done: reconstruct_coords_from_simplified_graph — took %.2f seconds', time.perf_counter() - t0)
 
     # ensure start and end points present
     if coords and coords[0] != (lat1, lon1):
