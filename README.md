@@ -24,9 +24,34 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions and more hosting op
 
 Note: This PoC uses `osmnx` for quick experimentation and validation of routing heuristics. For production, we recommend a dedicated routing engine (GraphHopper, Valhalla, OSRM, OpenRouteService) with prebuilt OSM extracts.
 
-## Algorithm Choice: Dijkstra's Algorithm & A*
+## Two Graph Approaches Available
 
-The routing implementation uses **Dijkstra's algorithm** (via NetworkX's `shortest_path`) for standard routing and **A*** for intersection-based routing. These algorithms are well-suited for finding optimal routes based on weighted edge values.
+Jadlo implements **two different routing approaches** - choose based on your route length and memory constraints:
+
+### 1. Full Graph Approach (Detailed)
+- **Function**: `compute_route()` 
+- **Best for**: Short routes (<50km), accurate geometry needed
+- **Algorithm**: Dijkstra's algorithm via NetworkX's `shortest_path`
+- **Memory**: Higher (includes all road detail)
+
+### 2. Intersection-Based Approach (Efficient)
+- **Function**: `compute_route_intersections()`
+- **Best for**: Long routes (>50km), memory-constrained environments
+- **Algorithm**: A* with geographic heuristic on simplified graph
+- **Memory**: Lower (only intersection nodes)
+
+**📖 New to Jadlo?** See [GRAPH_APPROACHES_QUICK_GUIDE.md](docs/GRAPH_APPROACHES_QUICK_GUIDE.md) for help choosing the right approach and understanding when to use branches vs forks.
+
+**🧪 Compare them yourself:**
+```bash
+# Compare both approaches on a short route
+PYTHONPATH=. python scripts/compare_graph_approaches.py --route short
+
+# Try a long route to see the memory/speed difference
+PYTHONPATH=. python scripts/compare_graph_approaches.py --route long
+```
+
+## Algorithm Choice: Dijkstra's Algorithm & A*
 
 **Why Dijkstra/A*?**
 - Both algorithms guarantee finding the optimal path based on edge weights
@@ -49,6 +74,7 @@ The route value calculation emphasizes **surface type** as a primary factor:
 - `static/index.html` — **Web interface** for generating GPX routes with interactive map and parameter controls.
 - `scripts/run_poc.py` — simple CLI to generate a single route and save GPX.
 - `scripts/run_poc_segmented.py` — tool to split long routes into segments, generate each segment and stitch GPX together (useful in resource-constrained environments).
+- `scripts/compare_graph_approaches.py` — **comparison tool to test both routing approaches** and see performance differences.
 - `requirements.txt` — Python dependency list.
 - `DEPLOYMENT.md` — **Complete guide for deploying to free hosting services** (Render, Railway, GitHub Pages).
 
@@ -181,6 +207,9 @@ PYTHONPATH=. python scripts/run_poc_segmented.py --start 52.2297 21.0122 --end 5
 ## Documentation
 
 For more detailed information:
+- [GRAPH_APPROACHES_QUICK_GUIDE.md](docs/GRAPH_APPROACHES_QUICK_GUIDE.md) - **Quick guide: Which graph approach to use and when to branch vs fork**
+- [DECISION_TREE.md](docs/DECISION_TREE.md) - **Visual decision trees and quick reference commands**
+- [BRANCHING_STRATEGY.md](docs/BRANCHING_STRATEGY.md) - Detailed branching strategy for exploring different routing approaches
 - [ROUTING_ALGORITHMS_COMPARISON.md](docs/ROUTING_ALGORITHMS_COMPARISON.md) - Comprehensive comparison of Jadlo's approach with academic research, commercial applications (Strava, Komoot, Google Maps, Apple Maps, etc.), OSM routing engines, and LLM-based routing
 - [ALGORITHM_CHOICE.md](docs/ALGORITHM_CHOICE.md) - Detailed explanation of why Dijkstra's algorithm is used
 - [APPLICATION_DOCUMENTATION.md](docs/APPLICATION_DOCUMENTATION.md) - Complete technical documentation
