@@ -4,8 +4,15 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import Optional, Tuple
-from app.routing import compute_route
 import os
+
+# Import routing modules
+from app.routing import compute_route  # Original OSMnx routing
+try:
+    from app.routing_hybrid import compute_route_hybrid, get_routing_info
+    HYBRID_ROUTING_AVAILABLE = True
+except ImportError:
+    HYBRID_ROUTING_AVAILABLE = False
 
 app = FastAPI(title="Jadlo Route Planner PoC")
 
@@ -42,15 +49,48 @@ class RouteRequest(BaseModel):
 async def route(req: RouteRequest):
     """Compute route between start and end using PoC weighting logic.
     Returns: geo coordinates and GPX string.
+    
+    This endpoint automatically uses the best available routing backend:
+    - Tries GraphHopper first (if available) for fast routing
+    - Falls back to OSMnx if GraphHopper is unavailable
+    - Set ROUTING_BACKEND env var to control behavior
     """
-    coords, gpx = compute_route(req.start, req.end, req.params.dict())
-    return {"coords": coords, "gpx": gpx}
+    if HYBRID_ROUTING_AVAILABLE:
+        coords, gpx, backend = compute_route_hybrid(req.start, req.end, req.params.dict())
+        return {
+            "coords": coords, 
+            "gpx": gpx,
+            "backend": backend,
+            "backend_info": "GraphHopper (fast)" if backend == 'graphhopper' else "OSMnx (original)"
+        }
+    else:
+        coords, gpx = compute_route(req.start, req.end, req.params.dict())
+        return {
+            "coords": coords, 
+            "gpx": gpx,
+            "backend": "osmnx",
+            "backend_info": "OSMnx (original)"
+        }
 
 
 @app.get('/health')
 async def health():
     """Health check endpoint for monitoring and load balancers."""
     return {"status": "healthy", "service": "Jadlo Route Planner"}
+
+
+@app.get('/routing/info')
+async def routing_info():
+    """Get information about routing backends and configuration."""
+    if HYBRID_ROUTING_AVAILABLE:
+        return get_routing_info()
+    else:
+        return {
+            "configured_backend": "osmnx",
+            "available_backends": {"osmnx": True, "graphhopper": False},
+            "recommendation": "osmnx",
+            "note": "Hybrid routing not available. Using OSMnx only."
+        }
 
 
 @app.get('/')

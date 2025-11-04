@@ -10,6 +10,10 @@ cache/
 artifacts/
 # Test-generated GPX files
 test_route_codespace.gpx
+# Prebuilt graphs (large binary files, don't commit)
+prebuilt_graphs/*.pkl
+prebuilt_graphs/*.json
+!prebuilt_graphs/README.md
 
 # Editor
 .vscode/

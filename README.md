@@ -22,7 +22,9 @@ See [DEPLOYMENT_ORACLE.md](DEPLOYMENT_ORACLE.md) for full guide.
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions and more hosting options (Railway, Fly.io, GitHub Pages).
 
-Note: This PoC uses `osmnx` for quick experimentation and validation of routing heuristics. For production, we recommend a dedicated routing engine (GraphHopper, Valhalla, OSRM, OpenRouteService) with prebuilt OSM extracts.
+**🚀 NEW: GraphHopper Integration!** Jadlo now supports production-ready routing with GraphHopper (500-1000x faster than OSMnx). See [GRAPHHOPPER_QUICKSTART.md](docs/GRAPHHOPPER_QUICKSTART.md) for 30-minute setup.
+
+Note: This PoC uses `osmnx` for quick experimentation and validation of routing heuristics. For production, we now support GraphHopper integration (recommended) or other dedicated routing engines (Valhalla, OSRM, OpenRouteService).
 
 ## Algorithm Choice: Dijkstra's Algorithm & A*
 
@@ -185,6 +187,9 @@ For more detailed information:
 - [ALGORITHM_CHOICE.md](docs/ALGORITHM_CHOICE.md) - Detailed explanation of why Dijkstra's algorithm is used
 - [APPLICATION_DOCUMENTATION.md](docs/APPLICATION_DOCUMENTATION.md) - Complete technical documentation
 - [INTEGRATION_TESTS.md](docs/INTEGRATION_TESTS.md) - Testing documentation
+- [PREBUILT_GRAPH_ANALYSIS.md](docs/PREBUILT_GRAPH_ANALYSIS.md) - Analysis of prebuilt graphs for large areas (e.g., 200km radius around Warsaw)
+- [GRAPH_SIZE_COMPARISON.md](docs/GRAPH_SIZE_COMPARISON.md) - Why OSMnx graphs are larger than Google Maps offline data
+- [GRAPHHOPPER_MIGRATION.md](docs/GRAPHHOPPER_MIGRATION.md) - Guide to migrating to GraphHopper (free, production-ready alternative)
 
 ## Next steps
 
