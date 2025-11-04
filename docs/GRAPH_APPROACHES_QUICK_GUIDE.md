@@ -35,9 +35,12 @@ git checkout -b feature/optimize-small-graphs
 Route Length     Memory Available     Use This Approach
 -----------     ----------------     -----------------
 < 20km          Any                  compute_route()
-20-50km         > 4GB RAM            compute_route()
-20-50km         < 4GB RAM            compute_route_intersections()
+20-50km         Plenty (>4GB*)       compute_route()
+20-50km         Limited (<4GB*)      compute_route_intersections()
 > 50km          Any                  compute_route_intersections()
+
+* Memory threshold is approximate based on typical OSM graph sizes.
+  Actual requirements depend on area density and road network complexity.
 ```
 
 ## How to Explore Both Approaches

@@ -15,6 +15,7 @@ Usage:
 import argparse
 import sys
 import time
+from math import radians, sin, cos, sqrt, atan2
 from pathlib import Path
 
 # Add parent directory to path for imports
@@ -58,8 +59,6 @@ def format_time(seconds):
 
 def calculate_route_distance(coords):
     """Calculate approximate route distance in km using haversine."""
-    from math import radians, sin, cos, sqrt, atan2
-    
     total_distance = 0
     for i in range(len(coords) - 1):
         lat1, lon1 = coords[i]
