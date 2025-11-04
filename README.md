@@ -22,7 +22,9 @@ See [DEPLOYMENT_ORACLE.md](DEPLOYMENT_ORACLE.md) for full guide.
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions and more hosting options (Railway, Fly.io, GitHub Pages).
 
-Note: This PoC uses `osmnx` for quick experimentation and validation of routing heuristics. For production, we recommend a dedicated routing engine (GraphHopper, Valhalla, OSRM, OpenRouteService) with prebuilt OSM extracts.
+**🚀 NEW: GraphHopper Integration!** Jadlo now supports production-ready routing with GraphHopper (500-1000x faster than OSMnx). See [GRAPHHOPPER_QUICKSTART.md](docs/GRAPHHOPPER_QUICKSTART.md) for 30-minute setup.
+
+Note: This PoC uses `osmnx` for quick experimentation and validation of routing heuristics. For production, we now support GraphHopper integration (recommended) or other dedicated routing engines (Valhalla, OSRM, OpenRouteService).
 
 ## Algorithm Choice: Dijkstra's Algorithm & A*
 
