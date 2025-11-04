@@ -35,7 +35,46 @@
                                          └─────────────────────────────┘
 ```
 
-## Decision Tree 2: Which Graph Approach?
+## Decision Tree 2: Major Architecture Change (e.g., osmnx → GraphHopper)
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Are you switching to a different routing engine?    │
+│  (e.g., osmnx → GraphHopper, Valhalla, OSRM)        │
+└──────────────────────────────────────────────────────┘
+                         │
+                         ├── NO ─────────────┐
+                         │                   │
+                         └── YES             │
+                             │               │
+    ┌────────────────────────▼───────────┐   │
+    │  Do you need both versions         │   │
+    │  available for production?         │   │
+    └────────────────────────────────────┘   │
+                         │                   │
+            ┌────────────┴────────────┐      │
+            │                         │      │
+          YES                        NO      │
+            │                         │      │
+            ▼                         ▼      │
+    ┌───────────────┐      ┌─────────────────────────┐
+    │  SEPARATE     │      │  LONG-LIVED BRANCH      │
+    │  REPOSITORY   │      │  (engine/graphhopper)   │
+    │               │      │                         │
+    │  e.g., Jadlo- │      │  Both in same repo,     │
+    │  GraphHopper  │      │  deploy from different  │
+    └───────────────┘      │  branches               │
+                           └─────────────────────────┘
+                                                      │
+                                                      │
+                           ┌──────────────────────────▼────┐
+                           │  USE BRANCHES FOR             │
+                           │  INCREMENTAL IMPROVEMENTS     │
+                           │  (not major rewrites)         │
+                           └───────────────────────────────┘
+```
+
+## Decision Tree 3: Which Graph Approach? (Current osmnx Implementation)
 
 ```
 ┌─────────────────────────────────────────┐
@@ -63,7 +102,7 @@
          └─────────┘   └──────────────────┘
 ```
 
-## Decision Tree 3: Repository Strategy for Teams
+## Decision Tree 4: Repository Strategy for Teams
 
 ```
 ┌─────────────────────────────────────────┐
@@ -101,9 +140,12 @@
 
 | Scenario | Solution | Command |
 |----------|----------|---------|
-| Want to explore full-graph improvements | Create feature branch | `git checkout -b feature/optimize-full-graph` |
-| Want to explore intersection-based improvements | Create feature branch | `git checkout -b feature/optimize-intersection` |
-| Want to test both approaches | Use comparison script | `PYTHONPATH=. python scripts/compare_graph_approaches.py` |
+| Want to explore full-graph improvements (osmnx) | Create feature branch | `git checkout -b feature/optimize-full-graph` |
+| Want to explore intersection-based improvements (osmnx) | Create feature branch | `git checkout -b feature/optimize-intersection` |
+| Want to test both osmnx approaches | Use comparison script | `PYTHONPATH=. python scripts/compare_graph_approaches.py` |
+| **Migrating to GraphHopper (both versions in production)** | **Separate repository** | Create new repo "Jadlo-GraphHopper" |
+| **Migrating to GraphHopper (experimental/parallel dev)** | **Long-lived branch** | `git checkout -b engine/graphhopper` |
+| **Want both engines switchable at runtime** | **Adapter pattern** | Implement routing engine abstraction |
 | Creating completely new project | Fork repository | Click "Fork" on GitHub |
 | Contributing without write access | Fork then PR | Fork → commit → create PR |
 | Want to merge improvements | Merge branch to main | `git checkout main && git merge feature/xyz` |

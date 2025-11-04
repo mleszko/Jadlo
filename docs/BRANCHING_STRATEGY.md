@@ -24,7 +24,134 @@ Forking is appropriate when:
 - You want to maintain a permanent divergent version
 - You're making changes you don't intend to merge back
 
-## The Two Graph Approaches in Jadlo
+## Special Case: Major Architectural Changes (e.g., Switching Routing Engines)
+
+### The GraphHopper Migration Scenario
+
+If you're considering a **major architectural change** like migrating from osmnx to GraphHopper, Valhalla, or another routing engine, you have three strategic options:
+
+### Option 1: Separate Repository (Recommended for Major Rewrites)
+
+**When to use**: When the new architecture is fundamentally different and you need both versions working simultaneously.
+
+**Pros**:
+- Complete independence between versions
+- No risk of breaking the working osmnx version
+- Can deploy both versions separately
+- Clear separation of dependencies and configurations
+- Easy to maintain different deployment pipelines
+
+**Cons**:
+- Duplicate code for shared components
+- Harder to share improvements between versions
+- Need to maintain two repositories
+
+**How to do it**:
+```bash
+# Create a new repository
+# Name it something like "Jadlo-GraphHopper" or "Jadlo-v2"
+# Copy the codebase and start the migration
+
+# Keep the original "Jadlo" repository with osmnx
+```
+
+### Option 2: Long-Lived Branches (For Parallel Development)
+
+**When to use**: When you want to maintain both versions in the same repository but keep them separate.
+
+**Pros**:
+- Single repository with shared history
+- Can cherry-pick improvements between branches
+- Easier to share common code changes
+- Single issue tracker and collaboration space
+
+**Cons**:
+- Need discipline to avoid merge conflicts
+- Branch can diverge significantly over time
+- Deployment requires specifying branch
+
+**How to do it**:
+```bash
+# Create a long-lived branch for GraphHopper
+git checkout -b engine/graphhopper
+
+# This branch will live alongside main for extended period
+# Deploy from main for osmnx version
+# Deploy from engine/graphhopper for GraphHopper version
+
+# Periodically merge common improvements
+git checkout engine/graphhopper
+git merge main  # or cherry-pick specific commits
+```
+
+### Option 3: Feature Flags / Adapter Pattern (For Gradual Migration)
+
+**When to use**: When you want both engines available in the same codebase with runtime switching.
+
+**Pros**:
+- Single codebase with both engines
+- Can switch at runtime via configuration
+- Gradual migration path
+- Can A/B test different engines
+
+**Cons**:
+- More complex codebase
+- Need abstraction layer for routing engines
+- Larger dependency footprint
+- More complex deployment
+
+**How to do it**:
+```python
+# Create an adapter interface
+class RoutingEngine(ABC):
+    @abstractmethod
+    def compute_route(self, start, end, params):
+        pass
+
+class OSMnxEngine(RoutingEngine):
+    def compute_route(self, start, end, params):
+        # Current osmnx implementation
+        pass
+
+class GraphHopperEngine(RoutingEngine):
+    def compute_route(self, start, end, params):
+        # New GraphHopper implementation
+        pass
+
+# Select engine via configuration
+ENGINE = os.getenv('ROUTING_ENGINE', 'osmnx')
+engine = OSMnxEngine() if ENGINE == 'osmnx' else GraphHopperEngine()
+```
+
+### Recommendation for GraphHopper Migration
+
+For a major architectural change like switching to GraphHopper:
+
+1. **If prototyping/experimenting**: Use a **long-lived branch** (`engine/graphhopper`)
+   - Easy to start, can decide later whether to merge or split
+
+2. **If planning production deployment of both**: Create a **separate repository**
+   - Better for maintaining two independent production systems
+   - Cleaner separation of concerns
+
+3. **If building a unified platform**: Use **adapter pattern**
+   - Best long-term architecture
+   - Requires more upfront design work
+
+### Migration Checklist
+
+When migrating to a different routing engine:
+
+- [ ] Document the decision and rationale
+- [ ] List incompatible features and breaking changes
+- [ ] Plan for data migration (if applicable)
+- [ ] Update deployment scripts and documentation
+- [ ] Consider backwards compatibility requirements
+- [ ] Plan for gradual rollout or A/B testing
+- [ ] Update CI/CD pipelines
+- [ ] Document differences in API and behavior
+
+## The Two Graph Approaches in Jadlo (Current osmnx-based Implementation)
 
 Jadlo currently implements two different graph-based routing approaches. Understanding these will help you choose the right approach for your use case.
 

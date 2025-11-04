@@ -121,12 +121,34 @@ coords, gpx = compute_route_intersections(start, end, params, radius_meters=8000
 ### ❌ "Forking is for experimentation"
 ✅ No! Forking is for creating independent projects. Branches are for experimentation.
 
-## When You SHOULD Fork
+## When You SHOULD Fork or Use Separate Repo
 
 - You're creating a completely different route planner
 - You want to take this code in a totally different direction
 - You're not planning to merge changes back
 - You don't have write access to the original repo
+- **You're switching to a different routing engine** (e.g., osmnx → GraphHopper) and want both versions available
+
+## Major Architecture Changes (e.g., Switching to GraphHopper)
+
+If you're considering migrating from osmnx to GraphHopper or another routing engine, this is a **major architectural change**. You have three options:
+
+1. **Separate Repository** (Recommended for production deployments)
+   - Keep current osmnx version in "Jadlo" repo
+   - Create new "Jadlo-GraphHopper" repo for GraphHopper version
+   - Deploy both independently
+
+2. **Long-Lived Branch** (For parallel development)
+   - Create `engine/graphhopper` branch that lives alongside `main`
+   - Both versions in same repo, deployed from different branches
+   - Easier to share improvements between versions
+
+3. **Adapter Pattern** (For runtime switching)
+   - Both engines in same codebase with abstraction layer
+   - Switch via configuration/environment variable
+   - More complex but most flexible
+
+See `docs/BRANCHING_STRATEGY.md` for detailed guidance on major architectural changes.
 
 ## Next Steps
 
@@ -139,10 +161,14 @@ coords, gpx = compute_route_intersections(start, end, params, radius_meters=8000
 
 | Goal | Action |
 |------|--------|
-| Try both approaches | Use the existing functions - no fork needed |
-| Improve one approach | Create a branch (not a fork) |
+| Try both osmnx approaches | Use the existing functions - no fork needed |
+| Improve one osmnx approach | Create a branch (not a fork) |
+| **Switch to GraphHopper (both versions live)** | **Separate repository or long-lived branch** |
+| **Switch to GraphHopper (experiment only)** | **Long-lived branch: `engine/graphhopper`** |
 | Create a new project | Fork the repository |
-| Compare approaches | Create separate branches for each |
+| Compare osmnx approaches | Create separate branches for each |
 | Ship to production | Merge your branch to main |
 
-**Bottom line: Use branches, not forks, for exploring these approaches in the same project.**
+**Bottom line for osmnx improvements**: Use branches, not forks.
+
+**Bottom line for major engine changes** (osmnx → GraphHopper): Consider separate repository or long-lived branch depending on whether you need both in production.
