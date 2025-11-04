@@ -208,6 +208,7 @@ PYTHONPATH=. python scripts/run_poc_segmented.py --start 52.2297 21.0122 --end 5
 
 For more detailed information:
 - [GRAPH_APPROACHES_QUICK_GUIDE.md](docs/GRAPH_APPROACHES_QUICK_GUIDE.md) - **Quick guide: Which graph approach to use and when to branch vs fork**
+- [DECISION_TREE.md](docs/DECISION_TREE.md) - **Visual decision trees and quick reference commands**
 - [BRANCHING_STRATEGY.md](docs/BRANCHING_STRATEGY.md) - Detailed branching strategy for exploring different routing approaches
 - [ROUTING_ALGORITHMS_COMPARISON.md](docs/ROUTING_ALGORITHMS_COMPARISON.md) - Comprehensive comparison of Jadlo's approach with academic research, commercial applications (Strava, Komoot, Google Maps, Apple Maps, etc.), OSM routing engines, and LLM-based routing
 - [ALGORITHM_CHOICE.md](docs/ALGORITHM_CHOICE.md) - Detailed explanation of why Dijkstra's algorithm is used
