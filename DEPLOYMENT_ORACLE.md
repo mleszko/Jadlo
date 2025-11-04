@@ -253,7 +253,22 @@ deploy:
       memory: 4G   # Minimum memory reservation
 ```
 
-If you're deploying on a smaller instance, you can reduce this limit by editing the docker-compose.yml file.
+The application is optimized for 24GB RAM systems with the following settings:
+- **OSMnx memory allocation**: 20GB for Overpass API queries (leaving 4GB for system overhead)
+- **Increased timeout**: 300 seconds (up from 180s) for complex long-distance routes
+- **Larger query area**: max_query_area_size increased to 5 billion square meters
+- **Better route coverage**: Default radius increased to 12km for intersection-based routing
+- **Optimized segmentation**: 30km segments (up from 20km) for fewer API calls
+
+These optimizations allow the application to:
+- Handle longer routes (150km+) more efficiently
+- Fetch more comprehensive road networks in a single query
+- Reduce the number of API calls needed for segmented routes
+- Provide better route options with wider geographic coverage
+
+If you're deploying on a smaller instance, you can reduce these limits by editing:
+- `docker-compose.yml` - Docker memory limits
+- `app/routing.py` - OSMnx configuration at the top of the file
 
 ### Handle Long Routes
 For routes longer than 100km, the application may take several minutes. Consider:

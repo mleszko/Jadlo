@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Simple CLI to run PoC route generation using app.routing.compute_route
 
+Memory optimization: Optimized for 24GB RAM systems with increased bbox_buffer (0.15) and
+support for larger radius values for comprehensive route coverage.
+
 Usage examples:
-  python scripts/run_poc.py --start 52.2297 21.0122 --end 53.1325 23.1688 --radius 3000 --out poc.gpx
-  # For long routes consider using bbox_buffer or run on a machine with enough RAM and use smaller corridor
+  python scripts/run_poc.py --start 52.2297 21.0122 --end 53.1325 23.1688 --radius 12000 --out poc.gpx
+  # For long routes with 24GB RAM, you can use larger radius values (up to 15000m) for better coverage
 """
 import argparse
 from app.routing import compute_route
@@ -18,7 +21,7 @@ def parse_args():
     p.add_argument('--heatmap_influence', type=float, default=0.0)
     p.add_argument('--prefer_streetview', type=float, default=0.0)
     p.add_argument('--radius', type=float, default=None, help='radius (meters) around start point to limit graph')
-    p.add_argument('--bbox-buffer', type=float, default=0.12, help='degree buffer for bbox if radius not set')
+    p.add_argument('--bbox-buffer', type=float, default=0.15, help='degree buffer for bbox if radius not set (default: 0.15, optimized for 24GB RAM)')
     p.add_argument('--out', type=str, default='poc_route.gpx')
     return p.parse_args()
 

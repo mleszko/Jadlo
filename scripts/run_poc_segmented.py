@@ -4,9 +4,13 @@
 This helps running long routes inside constrained environments (Codespace) by
 requesting multiple smaller graphs instead of one huge bbox.
 
+Memory optimization: Default parameters are optimized for 24GB RAM systems:
+- segment-km: 30 (increased from 20) for fewer segments and better performance
+- radius: 12000m (increased from 8000m) for more comprehensive route coverage
+
 Usage:
   python scripts/run_poc_segmented.py --start 52.2297 21.0122 --end 53.1325 23.1688 \
-      --segment-km 20 --radius 8000 --out poc_route_segmented.gpx
+      --segment-km 30 --radius 12000 --out poc_route_segmented.gpx
 
 Notes:
 - The script linearly interpolates lat/lon points between start and end to create
@@ -58,7 +62,7 @@ def stitch_coords(all_coords: List[List[Tuple[float, float]]]) -> List[Tuple[flo
     return stitched
 
 
-def run_segmented(start, end, params, segment_km=20, radius_m=8000, out='poc_route_segmented.gpx'):
+def run_segmented(start, end, params, segment_km=30, radius_m=12000, out='poc_route_segmented.gpx'):
     dist_km = haversine_km(start, end)
     n_segments = max(1, math.ceil(dist_km / segment_km))
     print(f'distance ~{dist_km:.1f} km, splitting into {n_segments} segments')
@@ -119,8 +123,9 @@ def parse_args():
     p = argparse.ArgumentParser(description='Run segmented PoC route generation')
     p.add_argument('--start', type=float, nargs=2, required=True)
     p.add_argument('--end', type=float, nargs=2, required=True)
-    p.add_argument('--segment-km', type=float, default=20)
-    p.add_argument('--radius', type=int, default=8000)
+    # Memory optimization: With 24GB RAM, increased defaults for better route coverage
+    p.add_argument('--segment-km', type=float, default=30, help='Segment length in km (default: 30, optimized for 24GB RAM)')
+    p.add_argument('--radius', type=int, default=12000, help='Radius in meters (default: 12000, optimized for 24GB RAM)')
     p.add_argument('--out', type=str, default='poc_route_segmented.gpx')
     return p.parse_args()
 
